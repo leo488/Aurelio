@@ -1,0 +1,9 @@
+export function AppMark({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <rect width="36" height="36" rx="11" fill="#1A1714" />
+      <path d="M18 8.5c3.9 4 6.8 7.3 6.8 11.3A6.8 6.8 0 0 1 18 26.6a6.8 6.8 0 0 1-6.8-6.8c0-4 2.9-7.3 6.8-11.3Z" fill="#C79A4A" />
+      <path d="M18 16.6c1.8 1.9 2.9 3.3 2.9 5a2.9 2.9 0 1 1-5.8 0c0-1.7 1.1-3.1 2.9-5Z" fill="#F5E7CC" />
+    </svg>
+  )
+}

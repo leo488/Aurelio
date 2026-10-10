@@ -1,0 +1,92 @@
+/* Design tokens from design_handoff_aurelio_pwa/README.md. The prototype HTML wins on any conflict. */
+:root {
+  --ink: #1a1714;
+  --ink-dark-bg: #17150f;
+  --gold: #c79a4a;
+  --gold-text: #a97c34;
+  --gold-pale: #f7ebd3;
+  --gold-core: #f5e7cc;
+  --gold-pale-2: #faf2e2;
+  --gold-warm: #dcc38a;
+  --sand: #e8d9c0;
+  --paper: #f6f1e9;
+  --white: #ffffff;
+  --chip: #e8e0d3;
+  --chip-text: #6a6158;
+  --chip-alt: #ede5d8;
+  --chip-alt-2: #efe7da;
+  --divider: #e6ded2;
+  --ring-track: #e6dccb;
+  --ring-track-2: #e4dbcc;
+  --checkbox-off: #dcd2c4;
+  --muted-1: #7c7368;
+  --muted-2: #8e857b;
+  --muted-3: #9c9287;
+  --muted-4: #a79e92;
+  --olive: #6e7f63;
+  --olive-pale: #b6c0ae;
+  --clay: #b4674a;
+  --clay-pale: #d9b5a6;
+  --clay-badge: #f3e3dc;
+  --iris: #8a7e9b;
+  --shared-bg: #f2e9d8;
+  --shared-text: #5c4413;
+  --shared-text-2: #8a7647;
+  --bar-border: #eae0cf;
+  --ember-cold: #b9ac98;
+  --heat-skipped: #cbc0ae;
+  --heat-future: #f0eae0;
+
+  /* Found only in the prototype HTML */
+  --chip-suggest-text: #5c5449;
+  --glyph-close: #a0958a;
+  --muted-back: #8e8275;
+  --stat-caption: #8a7e6a;
+  --divider-confirm: #e1d7c7;
+  --dot-read: #ddd3c3;
+  --drag-handle: #c9bfae;
+  --dark-outline: #33302a;
+  --dark-divider: #2c2820;
+  --dark-pending: #2e2a24;
+
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --radius-card: 26px;
+  --radius-sheet: 30px;
+  --radius-panel: 28px;
+  --radius-button: 18px;
+  --radius-tile: 16px;
+  --radius-pill: 99px;
+
+  --pad-x: 26px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --content-top: calc(var(--safe-top) + 16px);
+  --content-bottom: 130px;
+  --toast-shadow: 0 18px 34px -18px rgba(0, 0, 0, .6);
+
+  --wash-default: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 34%);
+  --wash-login: linear-gradient(180deg, #f0e2cb 0%, #f6f1e9 46%);
+  --wash-together: linear-gradient(180deg, #f2e7d2 0%, #f6f1e9 30%);
+  --wash-missed: linear-gradient(180deg, #e9e2d6 0%, #f6f1e9 32%);
+  --wash-settings: linear-gradient(180deg, #efe4d2 0%, #f6f1e9 26%);
+  --wash-empty: linear-gradient(180deg, #ede3d3 0%, #f6f1e9 40%);
+  --ori-sphere: radial-gradient(circle at 35% 28%, #f0d194 0%, #c79a4a 55%, #9c7128 100%);
+  --dark-runner: radial-gradient(110% 55% at 50% 0%, #2a2a22 0%, #17150f 62%);
+  --dark-ori: radial-gradient(80% 42% at 50% 56%, #3a2e18 0%, #17150f 66%);
+  --dark-milestone: radial-gradient(75% 42% at 50% 38%, #3e3118 0%, #17150f 70%);
+}
+
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slide-up { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+@keyframes sheet-up { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes pop-in { from { opacity: 0; transform: scale(.88) } to { opacity: 1; transform: scale(1) } }
+@keyframes ori-breathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.04) } }
+@keyframes ori-ring { from { opacity: .5; transform: scale(.86) } to { opacity: 0; transform: scale(1.5) } }
+@keyframes ori-orbit { to { transform: rotate(360deg) } }
+@keyframes ember-flicker { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.06) } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-iteration-count: 1 !important; }
+}

@@ -1,0 +1,8 @@
+.root { background: var(--wash-login); display: flex; flex-direction: column; align-items: center; text-align: center; }
+.title { font-family: var(--font-display); font-size: 42px; line-height: 1.05; font-weight: 700; letter-spacing: -0.035em; margin: 28px 0 40px; }
+.people { display: flex; gap: 22px; justify-content: center; }
+.person { display: flex; flex-direction: column; align-items: center; gap: 12px; transition: transform .2s ease; }
+.person:hover, .person:active { transform: translateY(-3px); }
+.avatar { width: 132px; height: 132px; border-radius: 50%; background: #dce3db; }
+.avatar[data-user='soniya'] { background: #f0dfc6; }
+.name { font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
