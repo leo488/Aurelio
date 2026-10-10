@@ -60,6 +60,7 @@
   --radius-pill: 99px;
 
   --pad-x: 26px;
+  --app-max: 480px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --content-top: calc(var(--safe-top) + 16px);
@@ -87,6 +88,8 @@
 @keyframes ori-orbit { to { transform: rotate(360deg) } }
 @keyframes ember-flicker { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.06) } }
 
+/* Turn off the infinite loops (breathing, rings, orbit, flicker) for reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-iteration-count: 1 !important; }
+  [style*='infinite'] { animation: none !important; }
 }

@@ -9,7 +9,7 @@ test('picking a profile goes to Today', () => {
       <App />
     </MemoryRouter>,
   )
-  expect(screen.getByText('Who are you today?')).toBeTruthy()
+  expect(screen.getByRole('heading', { name: /Who are you/ })).toBeTruthy()
   fireEvent.click(screen.getByText('Soniya'))
-  expect(screen.getByRole('heading', { name: 'Today' })).toBeTruthy()
+  expect(screen.getByText(/, Soniya$/)).toBeTruthy()
 })
