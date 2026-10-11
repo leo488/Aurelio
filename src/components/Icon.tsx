@@ -53,7 +53,7 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
 }
 
-export function Icon({ name, size = 24, color = '#1A1714', stroke = 1.8, style }: { name: IconName; size?: number; color?: string; stroke?: number; style?: React.CSSProperties }) {
+export function Icon({ name, size = 24, color = 'var(--ink)', stroke = 1.8, style }: { name: IconName; size?: number; color?: string; stroke?: number; style?: React.CSSProperties }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ flex: '0 0 auto', ...style }} aria-hidden="true">
       {PATHS[name]}
@@ -62,4 +62,4 @@ export function Icon({ name, size = 24, color = '#1A1714', stroke = 1.8, style }
 }
 
 /** The colour each routine icon wears in lists (sun gold, moon iris, gym olive, study muted). */
-export const ROUTINE_TINT: Record<string, string> = { sun: '#C79A4A', moon: '#8A7E9B', dumbbell: '#6E7F63', book: '#8E857B' }
+export const ROUTINE_TINT: Record<string, string> = { sun: 'var(--gold)', moon: 'var(--iris)', dumbbell: 'var(--olive)', book: 'var(--muted-2)' }

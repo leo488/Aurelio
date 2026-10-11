@@ -35,7 +35,7 @@ export function Ember({ streak, size, flicker, hero, plain, coldColor, style }: 
   if (level === 0) {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" style={s} aria-hidden="true">
-        <path d={FLAME_24} stroke={coldColor ?? '#B9AC98'} strokeWidth={coldColor ? 1.2 : 1.6} fill="none" />
+        <path d={FLAME_24} stroke={coldColor ?? 'var(--ember-cold)'} strokeWidth={coldColor ? 1.2 : 1.6} fill="none" />
       </svg>
     )
   }
@@ -66,8 +66,8 @@ export function Ember({ streak, size, flicker, hero, plain, coldColor, style }: 
   }
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" style={s} aria-hidden="true">
-      <circle cx="14" cy="14" r="12.4" stroke={hero ? '#C79A4A' : '#1A1714'} strokeWidth="1.5" fill="none" />
-      <path d={FLAME_28} fill={hero ? '#F6F1E9' : '#1A1714'} />
+      <circle cx="14" cy="14" r="12.4" stroke={hero ? '#C79A4A' : 'var(--ink)'} strokeWidth="1.5" fill="none" />
+      <path d={FLAME_28} fill={hero ? 'var(--on-dark)' : 'var(--ink)'} />
       <path d={CORE_28} fill="#C79A4A" />
     </svg>
   )

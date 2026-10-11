@@ -54,11 +54,11 @@ export function Runner() {
       </div>
       <div style={{ padding: '56px 34px 0', textAlign: 'center' }}>
         <div style={{ width: 172, margin: '0 auto' }}>
-          <ProgressRing pct={pct} size={172} inset={9} track="#2E2A24" hole="#17150F">
+          <ProgressRing pct={pct} size={172} inset={9} track="var(--dark-pending)">
             <div className="display" style={{ fontSize: 46, fontWeight: 800, letterSpacing: '-.04em', lineHeight: 1 }}>
-              {doneCount}<span style={{ fontSize: 24, color: '#79706A' }}>/{items.length}</span>
+              {doneCount}<span style={{ fontSize: 24, color: 'var(--dark-muted-3)' }}>/{items.length}</span>
             </div>
-            <div className="label" style={{ color: '#79706A', marginTop: 6 }}>Done</div>
+            <div className="label" style={{ color: 'var(--dark-muted-3)', marginTop: 6 }}>Done</div>
           </ProgressRing>
         </div>
         <div className="display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.03em', marginTop: 36 }} aria-live="polite">{stepLabel(current)}</div>
@@ -67,10 +67,10 @@ export function Runner() {
       <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', gap: 7, justifyContent: 'center', marginBottom: 14 }}>
           {items.map((it, i) => (
-            <div key={it.id} style={{ width: 34, height: 4, borderRadius: 2, background: isDone(it.id) ? '#6E7F63' : i === idx ? '#C79A4A' : '#2E2A24' }} />
+            <div key={it.id} style={{ width: 34, height: 4, borderRadius: 2, background: isDone(it.id) ? 'var(--olive)' : i === idx ? 'var(--gold)' : 'var(--dark-pending)' }} />
           ))}
         </div>
-        <button type="button" onClick={() => advance(true)} style={{ padding: 19, borderRadius: 22, background: 'var(--gold)', color: '#231A08', fontSize: 16, fontWeight: 800, textAlign: 'center' }}>Mark done</button>
+        <button type="button" onClick={() => advance(true)} style={{ padding: 19, borderRadius: 22, background: 'var(--gold)', color: 'var(--on-gold)', fontSize: 16, fontWeight: 800, textAlign: 'center' }}>Mark done</button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" className="btn-dark-outline" onClick={() => advance(false)}>Skip</button>
           <button type="button" className="btn-dark-outline" onClick={() => advance(false)}>Later today</button>

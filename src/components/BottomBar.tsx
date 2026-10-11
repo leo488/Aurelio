@@ -24,7 +24,7 @@ export function BottomBar({ role, active }: { role: Role; active: Tab }) {
     const on = active === t.tab
     return (
       <NavLink key={t.tab} to={t.to} className={`nav-tab${on ? ' on' : ''}`} aria-label={t.label} aria-current={on ? 'page' : undefined}>
-        <Icon name={t.icon} size={19} stroke={1.85} color={on ? '#F6F1E9' : '#9C9287'} />
+        <Icon name={t.icon} size={19} stroke={1.85} color={on ? 'var(--paper)' : 'var(--muted-3)'} />
         {on && <span>{t.label}</span>}
       </NavLink>
     )

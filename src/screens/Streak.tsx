@@ -16,12 +16,12 @@ export function Streak() {
   const st = r ? routineStreak(r, data.completions, today) : null
 
   return (
-    <main className="screen" style={{ background: 'linear-gradient(180deg, #F1E4CF 0%, #F6F1E9 32%)' }}>
+    <main className="screen" style={{ background: 'var(--wash-streak)' }}>
       <div className="pad top"><h1 className="title">Consistency</h1></div>
       {r ? (
         <>
           <div className="pad" style={{ paddingTop: 26, display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Ember streak={st!.current} size={86} flicker />
+            <Ember streak={st!.current} size={86} flicker style={{ filter: 'var(--glow-ember)' }} />
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <div className="display" style={{ fontSize: 58, fontWeight: 800, letterSpacing: '-.05em', lineHeight: 0.9 }}>{st!.current}</div>
@@ -39,13 +39,13 @@ export function Streak() {
             </div>
             <Heatmap routine={r} completions={data.completions} today={today} gap={7} />
             <div style={{ display: 'flex', gap: 16, marginTop: 18, flexWrap: 'wrap' }}>
-              {[['#6E7F63', 'Full'], ['#B6C0AE', 'Partial'], ['#E4DBCC', 'Missed']].map(([c, l]) => (
+              {[['var(--olive)', 'Full'], ['var(--olive-pale)', 'Partial'], ['var(--heat-missed)', 'Missed']].map(([c, l]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--muted-2)', fontWeight: 700 }}>
                   <div style={{ width: 11, height: 11, borderRadius: 3, background: c }} />{l}
                 </div>
               ))}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--muted-2)', fontWeight: 700 }}>
-                <div style={{ width: 11, height: 11, borderRadius: 3, border: '1.4px dashed #CBC0AE' }} />Skipped
+                <div style={{ width: 11, height: 11, borderRadius: 3, border: '1.4px dashed var(--heat-skipped)' }} />Skipped
               </div>
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 16 }}>

@@ -31,8 +31,8 @@ export function Together() {
     <div style={{ textAlign: 'center', flex: 1 }}>
       <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto' }}>
         <svg width="100" height="100" viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0 }} aria-hidden="true">
-          <circle cx="50" cy="50" r="47" fill="none" stroke="#E4DBCC" strokeWidth="5" />
-          <circle cx="50" cy="50" r="47" fill="none" stroke="#C79A4A" strokeWidth="5" strokeLinecap="round" strokeDasharray={C}
+          <circle cx="50" cy="50" r="47" fill="none" stroke="var(--heat-missed)" strokeWidth="5" />
+          <circle cx="50" cy="50" r="47" fill="none" stroke="var(--gold)" strokeWidth="5" strokeLinecap="round" strokeDasharray={C}
             strokeDashoffset={C - Math.round(C * (p && p.total ? p.done / p.total : 0))} transform="rotate(-90 50 50)" style={{ transition: 'stroke-dashoffset .5s ease' }} />
         </svg>
         <Avatar user={role} size={78} style={{ position: 'absolute', top: 11, left: 11 }} />

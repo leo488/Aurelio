@@ -38,13 +38,13 @@ export function RoutineDetail() {
 
   return (
     <main className="screen">
-      <div className="pad top" style={{ background: 'linear-gradient(170deg, #EFDFC4, #F6F1E9)', paddingBottom: 26 }}>
+      <div className="pad top" style={{ background: `linear-gradient(170deg, var(--hero-${r.timeCategory}), var(--paper))`, paddingBottom: 26 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <BackButton onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/routines'))} />
           <button type="button" aria-label="Routine options" onClick={() => setRoutineSheet(true)} style={{ fontSize: 19, lineHeight: 1 }}>⋯</button>
         </div>
         <h1 className="display" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.033em', margin: '16px 0 0' }}>{r.name}</h1>
-        <div style={{ fontSize: 13.5, color: '#7A6F5E', marginTop: 4, fontWeight: 600 }}>
+        <div style={{ fontSize: 13.5, color: 'var(--hero-sub)', marginTop: 4, fontWeight: 600 }}>
           {categoryText(r)} · {when} · {r.steps.length} steps{totalMinutes(r.steps) ? ` · ~${totalMinutes(r.steps)} min` : ''}{r.active ? '' : ' · inactive'}
         </div>
         {r.description && <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 8, lineHeight: 1.5 }}>{r.description}</div>}

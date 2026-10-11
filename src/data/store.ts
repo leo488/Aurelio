@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { flash } from '../components/Toast'
+import { haptic } from '../lib/haptics'
 import { addDays, logicalToday, minutesOf, hhmm } from '../lib/date'
 import {
   backfilledRecently, completionId, completionOf, isComplete, MAX_SKIPS_PER_WEEK, requiredSteps, routineStreak, skipsThisWeek,
@@ -256,6 +257,7 @@ export const useData = create<DataState & Actions>()((set, get) => {
       }))
       const after = completionOf(get().completions, routineId, date)
       const completedRoutine = !wasFull && isComplete(r, date, after)
+      haptic(completedRoutine ? 20 : 8)
       const streak = routineStreak(r, get().completions, logicalToday()).current
       if (completedRoutine && date === logicalToday()) {
         get().addActivity({ id: `${me().id}|routine-done|${routineId}|${date}`, kind: 'routine-done', text: `finished ${r.name}` })
@@ -302,6 +304,7 @@ export const useData = create<DataState & Actions>()((set, get) => {
       const t = get().tasks.find((x) => x.id === id)
       if (!t) return
       const completed = !t.completed
+      haptic()
       putTask({ ...t, completed, completedAt: completed ? nowIso() : undefined, updatedAt: nowIso() })
       const today = logicalToday()
       if (completed && t.date === today) {

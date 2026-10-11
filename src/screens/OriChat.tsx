@@ -89,9 +89,9 @@ export function OriChat() {
         {SUGGESTIONS[me.role].map((s) => <button key={s} type="button" className="chip soft" onClick={() => send(s)}>{s}</button>)}
       </div>
       <form style={{ padding: '14px 22px calc(36px + var(--safe-bottom) * .5)', flex: '0 0 auto' }} onSubmit={(e) => { e.preventDefault(); send(text) }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid var(--bar-border)', borderRadius: 22, padding: '11px 12px 11px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--white)', border: '1px solid var(--bar-border)', borderRadius: 22, padding: '11px 12px 11px 16px' }}>
           <input className="text-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Message, or tap the mic to speak" aria-label="Message Ori"
-            style={{ flex: 1, fontSize: 14.5 }} />
+            style={{ flex: 1, fontSize: 16 }} />
           {text.trim() ? (
             <button type="submit" aria-label="Send" style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--ink)', color: 'var(--gold)', fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↑</button>
           ) : (

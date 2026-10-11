@@ -2,7 +2,7 @@
 
 A private PWA for two people. **Leo** gets routines, steps, streaks and stats. **Sonia** gets a daily planner with
 tasks, reminders and a calendar. A light shared layer lets each see the other's progress numbers, send encouragement
-and set reminders for each other. Built from `design_handoff_aurelio_pwa/` (the prototype HTML wins on any visual conflict).
+and set reminders for each other. Built from `design_handoff_aurelio_pwa/`, reskinned with `design_handoff_aurelio_dark_skin/` (dark is the default look).
 
 Stack: Vite + React + TypeScript, React Router, Zustand, vite-plugin-pwa (Workbox), self-hosted fonts, optional Supabase.
 
@@ -67,6 +67,10 @@ Settings → Reset demo data puts the demo back.
 5. Set the env vars above where the app is built.
 
 ## Things to know
+
+- **Theme:** every colour is a token in `src/styles/tokens.css`; components hold no raw colours. The dark skin is the
+  default, and the original light skin sits behind the same tokens as `<html data-theme="light">`, ready for an
+  Appearance setting.
 
 - **Offline:** the app shell is cached by the service worker. With Supabase, writes made offline are queued and sent
   when the connection is back, and the PIN unlocks offline on a device that has signed in before.

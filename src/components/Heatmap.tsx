@@ -12,13 +12,13 @@ export function Heatmap({ routine, completions, today, gap = 6, radius = 7 }: { 
         let bg = 'transparent'
         let border: string | undefined
         const o = d > today ? 'none' : outcome(routine, d, completionOf(completions, routine.id, d))
-        if (d > today) bg = '#F0EAE0'
-        else if (d === today) bg = o === 'full' ? '#6E7F63' : '#C79A4A'
-        else if (o === 'full') bg = '#6E7F63'
-        else if (o === 'partial') bg = '#B6C0AE'
-        else if (o === 'missed') bg = '#E4DBCC'
-        else if (o === 'skipped') border = '1.4px dashed #CBC0AE'
-        else bg = '#F0EAE0'
+        if (d > today) bg = 'var(--heat-future)'
+        else if (d === today) bg = o === 'full' ? 'var(--olive)' : 'var(--gold)'
+        else if (o === 'full') bg = 'var(--olive)'
+        else if (o === 'partial') bg = 'var(--olive-pale)'
+        else if (o === 'missed') bg = 'var(--heat-missed)'
+        else if (o === 'skipped') border = '1.4px dashed var(--heat-skipped)'
+        else bg = 'var(--heat-future)'
         return <div key={d} title={d} style={{ aspectRatio: '1', borderRadius: radius, background: bg, border }} />
       })}
     </div>

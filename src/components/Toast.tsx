@@ -30,7 +30,7 @@ export function Toast({ withBar }: { withBar: boolean }) {
       <Ori size={22} />
       <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, lineHeight: 1.4 }}>{toast.text}</div>
       {toast.action && (
-        <button type="button" onClick={() => { toast.action!.run(); clear() }} style={{ color: '#C79A4A', fontWeight: 800, fontSize: 13.5 }}>
+        <button type="button" onClick={() => { toast.action!.run(); clear() }} style={{ color: 'var(--gold)', fontWeight: 800, fontSize: 13.5 }}>
           {toast.action.label}
         </button>
       )}

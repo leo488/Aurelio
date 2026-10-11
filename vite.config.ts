@@ -18,8 +18,8 @@ export default defineConfig({
         id: '/',
         start_url: '/',
         scope: '/',
-        background_color: '#F6F1E9',
-        theme_color: '#F6F1E9',
+        background_color: '#0E1013',
+        theme_color: '#0E1013',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -32,6 +32,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         // Tapping a reminder focuses the open app (or opens it) on the right screen.
         importScripts: ['sw-notify.js'],
+        // Bumped for the dark skin so installed copies drop the old cache.
+        cacheId: 'aurelio-v2',
       },
     }),
   ],

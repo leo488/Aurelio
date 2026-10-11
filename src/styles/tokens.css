@@ -1,53 +1,88 @@
-/* Design tokens from design_handoff_aurelio_pwa/README.md. The prototype HTML wins on any conflict. */
+/* Design tokens. Components only use these variables, never raw colours.
+   Dark is the default skin (design_handoff_aurelio_dark_skin/README.md); the original light skin
+   is kept behind the same tokens as [data-theme="light"]. */
 :root {
-  --ink: #1a1714;
-  --ink-dark-bg: #17150f;
-  --gold: #c79a4a;
-  --gold-text: #a97c34;
-  --gold-pale: #f7ebd3;
-  --gold-core: #f5e7cc;
-  --gold-pale-2: #faf2e2;
-  --gold-warm: #dcc38a;
-  --sand: #e8d9c0;
-  --paper: #f6f1e9;
-  --white: #ffffff;
-  --chip: #e8e0d3;
-  --chip-text: #6a6158;
-  --chip-alt: #ede5d8;
-  --chip-alt-2: #efe7da;
-  --divider: #e6ded2;
-  --ring-track: #e6dccb;
-  --ring-track-2: #e4dbcc;
-  --checkbox-off: #dcd2c4;
-  --muted-1: #7c7368;
-  --muted-2: #8e857b;
-  --muted-3: #9c9287;
-  --muted-4: #a79e92;
-  --olive: #6e7f63;
-  --olive-pale: #b6c0ae;
-  --clay: #b4674a;
-  --clay-pale: #d9b5a6;
-  --clay-badge: #f3e3dc;
-  --iris: #8a7e9b;
-  --shared-bg: #f2e9d8;
-  --shared-text: #5c4413;
-  --shared-text-2: #8a7647;
-  --bar-border: #eae0cf;
-  --ember-cold: #b9ac98;
-  --heat-skipped: #cbc0ae;
-  --heat-future: #f0eae0;
+  color-scheme: dark;
 
-  /* Found only in the prototype HTML */
-  --chip-suggest-text: #5c5449;
-  --glyph-close: #a0958a;
-  --muted-back: #8e8275;
-  --stat-caption: #8a7e6a;
-  --divider-confirm: #e1d7c7;
-  --dot-read: #ddd3c3;
-  --drag-handle: #c9bfae;
-  --dark-outline: #33302a;
-  --dark-divider: #2c2820;
-  --dark-pending: #2e2a24;
+  /* Ink is the strongest foreground and the "inverted" fill (active pills, primary buttons, toast).
+     Paper is the page and the text on ink. In the dark skin they swap, which is the inversion rule. */
+  --ink: #eeebe6;
+  --paper: #0e1013;
+  --white: #181b20;            /* the one raised surface: cards, inputs, PIN keys */
+  --outside: #07080a;          /* around the app column on desktop */
+
+  --gold: #c79a4a;
+  --gold-text: #d9b063;
+  --gold-pale: #2a2416;
+  --gold-core: #3d3220;
+  --gold-pale-2: #1e1a12;
+  --gold-warm: #6b5328;
+  --on-gold: #231a08;
+  --sand: #3f444c;
+
+  --chip: #20242a;
+  --chip-text: #aeb4bb;
+  --chip-alt: #1c2025;
+  --chip-alt-2: #16191d;
+  --chip-suggest-text: #c3c8ce;
+  --divider: #21252b;
+  --divider-confirm: #262a30;
+  --ring-track: #23272d;
+  --ring-track-2: #2a2e35;
+  --checkbox-off: #3a3f47;
+  --dashed: #3a3f47;
+  --placeholder: #5e656e;
+  --toggle-off: #2f343b;
+  --toggle-on: #c79a4a;
+  --knob: #f4f1ec;
+  --dot-read: #343941;
+  --drag-handle: #4c535c;
+
+  --muted-1: #9ba1a9;
+  --muted-2: #868d96;
+  --muted-3: #757c85;
+  --muted-4: #5e656e;
+  --glyph-close: #8d949c;
+  --muted-back: #7f868f;
+  --stat-caption: #8b9198;
+  --hero-sub: #9ba1a9;
+
+  --olive: #7fa07a;
+  --olive-pale: #3f5640;
+  --clay: #e08a69;
+  --clay-pale: #7a4a3a;
+  --clay-badge: #2a1b17;
+  --clay-strong: #f0b49c;
+  --ok-soft: #17231b;
+  --ok-text: #a9c59a;
+  --iris: #a497c4;
+  --night-tint: #c3c8ce;
+  --shared-bg: #1e1a12;
+  --shared-text: #d9b063;
+  --shared-text-2: #9ba1a9;
+  --bar-border: #23272d;
+  --ember-cold: #6b727b;
+  --heat-skipped: #3f444c;
+  --heat-future: #15181c;
+  --heat-missed: #2a2e35;
+  --heat-0: #1a1d22;
+  --heat-1: #3d3220;
+  --heat-2: #6b5328;
+  --heat-3: #a27a35;
+  --heat-4: #d8ae5e;
+  --app-mark: #1c2026;
+
+  /* The screens that were always dark (runner, done, milestone, Ori voice). */
+  --ink-dark-bg: #0a0b0e;
+  --on-dark: #eeebe6;
+  --dark-outline: #2b3037;
+  --dark-divider: #22262c;
+  --dark-pending: #23272d;
+  --dark-muted-1: #8d949c;
+  --dark-muted-2: #7f868f;
+  --dark-muted-3: #646b74;
+  --dark-faint: #4e555e;
+  --dark-hint: #6e757e;
 
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -60,20 +95,141 @@
   --radius-pill: 99px;
 
   --pad-x: 26px;
-  --app-max: 480px;
+  --app-max: 390px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --content-top: calc(var(--safe-top) + 16px);
   --content-bottom: 130px;
   --toast-shadow: 0 18px 34px -18px rgba(0, 0, 0, .6);
+  --scrim: rgba(3, 4, 6, .66);
 
+  /* Bottom bar: glass in dark, white in light. */
+  --bar-bg: rgba(22, 25, 30, .78);
+  --bar-line: rgba(255, 255, 255, .07);
+  --bar-shadow: 0 18px 40px -18px rgba(0, 0, 0, .85);
+  --bar-fade: linear-gradient(180deg, rgba(14, 16, 19, 0), #0e1013 40%);
+
+  /* The four gold glows, and nowhere else. */
+  --glow-ring: drop-shadow(0 0 6px rgba(199, 154, 74, .55));
+  --glow-ori: drop-shadow(0 0 12px rgba(199, 154, 74, .5));
+  --glow-ember: drop-shadow(0 0 14px rgba(199, 154, 74, .45));
+  --glow-avatar: drop-shadow(0 10px 30px rgba(199, 154, 74, .25));
+
+  /* Header auras */
+  --wash-default: radial-gradient(110% 38% at 92% -6%, rgba(199, 154, 74, .20) 0%, rgba(199, 154, 74, 0) 62%), linear-gradient(180deg, #151820 0%, #0e1013 42%);
+  --wash-streak: radial-gradient(110% 38% at 20% -6%, rgba(199, 154, 74, .22) 0%, rgba(199, 154, 74, 0) 62%), linear-gradient(180deg, #151820 0%, #0e1013 42%);
+  --wash-login: radial-gradient(90% 45% at 50% -8%, rgba(199, 154, 74, .24) 0%, rgba(199, 154, 74, 0) 66%), #0e1013;
+  --wash-pin: radial-gradient(90% 40% at 50% -8%, rgba(199, 154, 74, .20) 0%, rgba(199, 154, 74, 0) 66%), #0e1013;
+  --wash-settings: radial-gradient(110% 32% at 10% -6%, rgba(199, 154, 74, .16) 0%, rgba(199, 154, 74, 0) 62%), #0e1013;
+  --wash-together: var(--wash-settings);
+  --wash-empty: var(--wash-settings);
+  --wash-missed: linear-gradient(180deg, #1c1719 0%, #0e1013 32%);
+  --hero-morning: #251f15;
+  --hero-afternoon: #162019;
+  --hero-evening: #1d1a26;
+  --hero-night: #1a1c21;
+  --hero-custom: #231e15;
+
+  --ori-sphere: radial-gradient(circle at 35% 28%, #f0d194 0%, #c79a4a 55%, #9c7128 100%);
+  --dark-runner: radial-gradient(110% 55% at 50% 0%, #1a1e24 0%, #0a0b0e 62%);
+  --dark-ori: radial-gradient(80% 42% at 50% 56%, #2b2516 0%, #0a0b0e 66%);
+  --dark-milestone: radial-gradient(75% 42% at 50% 38%, #2e2717 0%, #0a0b0e 70%);
+}
+
+/* The original light skin, ready for a Settings → Appearance switch. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ink: #1a1714;
+  --paper: #f6f1e9;
+  --white: #ffffff;
+  --outside: #ede4d8;
+  --gold-text: #a97c34;
+  --gold-pale: #f7ebd3;
+  --gold-core: #f5e7cc;
+  --gold-pale-2: #faf2e2;
+  --gold-warm: #dcc38a;
+  --sand: #e8d9c0;
+  --chip: #e8e0d3;
+  --chip-text: #6a6158;
+  --chip-alt: #ede5d8;
+  --chip-alt-2: #efe7da;
+  --chip-suggest-text: #5c5449;
+  --divider: #e6ded2;
+  --divider-confirm: #e1d7c7;
+  --ring-track: #e6dccb;
+  --ring-track-2: #e4dbcc;
+  --checkbox-off: #dcd2c4;
+  --dashed: #d5cab8;
+  --placeholder: #bcb2a4;
+  --toggle-off: #dfd5c5;
+  --toggle-on: #1a1714;
+  --knob: #ffffff;
+  --dot-read: #ddd3c3;
+  --drag-handle: #c9bfae;
+  --muted-1: #7c7368;
+  --muted-2: #8e857b;
+  --muted-3: #9c9287;
+  --muted-4: #a79e92;
+  --glyph-close: #a0958a;
+  --muted-back: #8e8275;
+  --stat-caption: #8a7e6a;
+  --hero-sub: #7a6f5e;
+  --olive: #6e7f63;
+  --olive-pale: #b6c0ae;
+  --clay: #b4674a;
+  --clay-pale: #d9b5a6;
+  --clay-badge: #f3e3dc;
+  --clay-strong: #7a3e2e;
+  --ok-soft: #e6eadf;
+  --ok-text: #3e4a37;
+  --iris: #8a7e9b;
+  --night-tint: #5c5449;
+  --shared-bg: #f2e9d8;
+  --shared-text: #5c4413;
+  --shared-text-2: #8a7647;
+  --bar-border: #eae0cf;
+  --ember-cold: #b9ac98;
+  --heat-skipped: #cbc0ae;
+  --heat-future: #f0eae0;
+  --heat-missed: #e4dbcc;
+  --heat-0: #f0eae0;
+  --heat-1: #e9e1d3;
+  --heat-2: #dcc9a3;
+  --heat-3: #c9a869;
+  --heat-4: #a97c34;
+  --app-mark: #1a1714;
+  --ink-dark-bg: #17150f;
+  --on-dark: #f6f1e9;
+  --dark-outline: #33302a;
+  --dark-divider: #2c2820;
+  --dark-pending: #2e2a24;
+  --dark-muted-1: #a0958a;
+  --dark-muted-2: #8e8275;
+  --dark-muted-3: #79706a;
+  --dark-faint: #6a6055;
+  --dark-hint: #7e7468;
+  --scrim: rgba(26, 23, 20, .4);
+  --bar-bg: #ffffff;
+  --bar-line: #eae0cf;
+  --bar-shadow: none;
+  --bar-fade: linear-gradient(180deg, rgba(246, 241, 233, 0), #f6f1e9 40%);
+  --glow-ring: none;
+  --glow-ori: none;
+  --glow-ember: none;
+  --glow-avatar: none;
   --wash-default: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 34%);
+  --wash-streak: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 32%);
   --wash-login: linear-gradient(180deg, #f0e2cb 0%, #f6f1e9 46%);
+  --wash-pin: linear-gradient(180deg, #f0e2cb 0%, #f6f1e9 46%);
   --wash-together: linear-gradient(180deg, #f2e7d2 0%, #f6f1e9 30%);
   --wash-missed: linear-gradient(180deg, #e9e2d6 0%, #f6f1e9 32%);
   --wash-settings: linear-gradient(180deg, #efe4d2 0%, #f6f1e9 26%);
   --wash-empty: linear-gradient(180deg, #ede3d3 0%, #f6f1e9 40%);
-  --ori-sphere: radial-gradient(circle at 35% 28%, #f0d194 0%, #c79a4a 55%, #9c7128 100%);
+  --hero-morning: #efdfc4;
+  --hero-afternoon: #e2e4d5;
+  --hero-evening: #e5e0e8;
+  --hero-night: #e4dfd8;
+  --hero-custom: #efe3cc;
   --dark-runner: radial-gradient(110% 55% at 50% 0%, #2a2a22 0%, #17150f 62%);
   --dark-ori: radial-gradient(80% 42% at 50% 56%, #3a2e18 0%, #17150f 66%);
   --dark-milestone: radial-gradient(75% 42% at 50% 38%, #3e3118 0%, #17150f 70%);

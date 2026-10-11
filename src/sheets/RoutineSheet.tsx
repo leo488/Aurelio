@@ -37,7 +37,7 @@ export function RoutineSheet({ routine: r, onClose }: { routine: Routine; onClos
       <input className="text-input display" value={r.name} aria-label="Routine name" onChange={(e) => up({ name: e.target.value })}
         style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.03em', marginTop: 22 }} />
       <input className="text-input" value={r.description ?? ''} aria-label="Description" placeholder="Description (optional)" onChange={(e) => up({ description: e.target.value || undefined })}
-        style={{ fontSize: 15, marginTop: 10 }} />
+        style={{ fontSize: 16, marginTop: 10 }} />
       <div style={{ height: 1, background: 'var(--divider-confirm)', marginTop: 12 }} />
       <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', paddingTop: 16 }} role="radiogroup" aria-label="Time of day">
         {CATEGORIES.map((c) => (
@@ -48,7 +48,7 @@ export function RoutineSheet({ routine: r, onClose }: { routine: Routine; onClos
       </div>
       {r.timeCategory === 'custom' && (
         <input className="text-input" value={r.categoryLabel ?? ''} onChange={(e) => up({ categoryLabel: e.target.value || undefined })} placeholder="Label it, e.g. Before class" aria-label="Custom label"
-          style={{ fontSize: 15, fontWeight: 700, marginTop: 12, padding: '12px 14px', background: '#fff', borderRadius: 14 }} />
+          style={{ fontSize: 16, fontWeight: 700, marginTop: 12, padding: '12px 14px', background: 'var(--white)', borderRadius: 14 }} />
       )}
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: 8 }}>
         <Row title="Repeats" value={daysLabel(days)} />

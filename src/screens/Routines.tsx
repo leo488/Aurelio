@@ -31,7 +31,7 @@ export function Routines() {
     Array.from({ length: 7 }, (_, i) => {
       const d = addDays(today, i - 6)
       const o = outcome(r, d, completionOf(data.completions, r.id, d))
-      return o === 'full' ? '#6E7F63' : o === 'partial' ? '#B6C0AE' : o === 'none' || o === 'skipped' ? '#F0EAE0' : d === today ? '#F0EAE0' : '#E2D9CB'
+      return o === 'full' ? 'var(--olive)' : o === 'partial' ? 'var(--olive-pale)' : o === 'none' || o === 'skipped' ? 'var(--heat-future)' : d === today ? 'var(--heat-future)' : 'var(--heat-missed)'
     })
 
   return (
@@ -72,7 +72,7 @@ export function Routines() {
           <div className="label">Inactive</div>
           {inactive.map((r) => (
             <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '16px 0', display: 'flex', alignItems: 'center', gap: 12, opacity: 0.55, color: 'inherit' }}>
-              <Icon name={r.icon} size={22} color="#8E857B" />
+              <Icon name={r.icon} size={22} color="var(--muted-2)" />
               <div style={{ flex: 1 }}>
                 <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.022em' }}>{r.name}</div>
                 <div className="meta">Inactive · streak of {routineStreak(r, data.completions, today).current} held</div>

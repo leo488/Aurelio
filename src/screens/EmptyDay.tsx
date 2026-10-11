@@ -21,7 +21,7 @@ export function EmptyDay() {
         <h1 className="title-30" style={{ marginTop: 4 }}>{greeting()}, {name}</h1>
       </div>
       <div style={{ padding: '52px 32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-        <Ember streak={0} size={76} coldColor="#CFC3AF" />
+        <Ember streak={0} size={76} coldColor="var(--ember-cold)" />
         <div className="display" style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.028em', marginTop: 24 }}>Nothing lit yet</div>
         <div style={{ fontSize: 14.5, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 10 }}>Build your first routine by hand, or tell Ori what you want and review the draft.</div>
       </div>

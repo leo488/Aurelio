@@ -62,8 +62,10 @@ export function Layout() {
 
   const dark = DARK.includes(pathname)
   useEffect(() => {
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#17150F' : '#F6F1E9')
-    document.documentElement.style.background = dark ? '#17150F' : ''
+    // The status bar takes the colour of the screen under it, read from the theme tokens.
+    const token = getComputedStyle(document.documentElement).getPropertyValue(dark ? '--ink-dark-bg' : '--paper').trim()
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', token)
+    document.documentElement.style.background = dark ? 'var(--ink-dark-bg)' : ''
   }, [dark])
 
   useEffect(() => window.scrollTo(0, 0), [pathname])

@@ -52,7 +52,7 @@ export function Timeline({ tasks, empty }: { tasks: Task[]; empty: string }) {
           <div key={t.id} style={{ display: 'flex', gap: 14 }}>
             <div style={{ width: 44, fontSize: 12, color: 'var(--muted-3)', fontWeight: 800, paddingTop: 15, flex: '0 0 auto' }}>{t.startTime ? looseTime(t.startTime) : i === 0 || tasks[i - 1].startTime ? 'Any' : ''}</div>
             <div style={{ flex: 1, padding: i === tasks.length - 1 ? '0 0 0 14px' : '0 0 12px 14px', borderLeft: '1px solid var(--divider)' }}>
-              <div style={{ background: '#fff', borderRadius: 16, padding: '13px 15px', display: 'flex', gap: 12, alignItems: 'center', borderLeft: `3px solid ${accent}`, opacity: t.completed ? 0.6 : 1 }}>
+              <div style={{ background: 'var(--white)', borderRadius: 16, padding: '13px 15px', display: 'flex', gap: 12, alignItems: 'center', borderLeft: `3px solid ${accent}`, opacity: t.completed ? 0.6 : 1 }}>
                 <button type="button" aria-label={`${t.completed ? 'Mark not done' : 'Complete'}: ${t.title}`} aria-pressed={t.completed} onClick={() => toggle(t.id)} style={{ lineHeight: 0 }}>
                   <Check done={t.completed} />
                 </button>
@@ -102,15 +102,15 @@ export function QuickAdd({ date }: { date: string }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, border: '1px dashed #D5CAB8', color: 'var(--muted-2)', width: '100%' }}>
+      <button type="button" onClick={() => setOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, border: '1px dashed var(--dashed)', color: 'var(--muted-2)', width: '100%' }}>
         <span style={{ fontSize: 15 }}>+</span><span style={{ fontSize: 15, fontWeight: 700 }}>Add task</span>
       </button>
     )
   }
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px 12px 16px', borderRadius: 18, background: '#fff' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px 12px 16px', borderRadius: 18, background: 'var(--white)' }}>
       <input className="text-input" autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Task, then a time (Call Mum 18:00)" aria-label="New task"
-        onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') setOpen(false) }} style={{ flex: 1, fontSize: 15, fontWeight: 700 }} />
+        onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') setOpen(false) }} style={{ flex: 1, fontSize: 16, fontWeight: 700 }} />
       <button type="button" onClick={() => navigate(`/tasks/new?date=${date}${text.trim() ? `&title=${encodeURIComponent(text.trim())}` : ''}`)} style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}>More</button>
       <button type="button" onClick={submit} className="pill-ink" disabled={!text.trim()} style={{ opacity: text.trim() ? 1 : 0.4 }}>Add</button>
     </div>

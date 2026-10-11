@@ -151,12 +151,12 @@ export function OriVoice() {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }} onClick={finish}>
           <div style={{ paddingTop: 44, display: 'flex', justifyContent: 'center' }}><OriListening size={150} /></div>
           <div style={{ padding: '42px 32px 0' }} aria-live="polite">
-            <div className="display" style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1.42, color: transcript ? undefined : '#6A6055' }}>
-              {transcript ? <>“{transcript}<span style={{ color: '#6A6055' }}>…”</span></> : 'Say what’s coming up. A class, a reminder, a deadline…'}
+            <div className="display" style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1.42, color: transcript ? undefined : 'var(--dark-faint)' }}>
+              {transcript ? <>“{transcript}<span style={{ color: 'var(--dark-faint)' }}>…”</span></> : 'Say what’s coming up. A class, a reminder, a deadline…'}
             </div>
           </div>
           <div className="dark-bottom" style={{ marginTop: 'auto', padding: '30px 32px 0', textAlign: 'center' }}>
-            <div style={{ fontSize: 13, color: '#7E7468', fontWeight: 600 }}>Tap to finish · swipe down to cancel</div>
+            <div style={{ fontSize: 13, color: 'var(--dark-hint)', fontWeight: 600 }}>Tap to finish · swipe down to cancel</div>
             <button type="button" onClick={(e) => { e.stopPropagation(); rec.current?.abort(); setPhase('typing') }} style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 800, marginTop: 12 }}>Type instead</button>
           </div>
         </div>
@@ -172,8 +172,8 @@ export function OriVoice() {
             <textarea autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} rows={4} aria-label="What should Ori add?"
               placeholder="Tomorrow I have class from nine to twelve, remind me at four to work on my assignment, and it’s due Friday"
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); think(typed) } }}
-              style={{ width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 18, padding: 16, color: 'var(--paper)', fontSize: 16, lineHeight: 1.5, outline: 'none', resize: 'none' }} />
-            <div style={{ fontSize: 12.5, color: '#7E7468', marginTop: 10, lineHeight: 1.5 }}>Voice isn’t available here, so type it instead. Nothing is saved until you say so.</div>
+              style={{ width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 18, padding: 16, color: 'var(--on-dark)', fontSize: 16, lineHeight: 1.5, outline: 'none', resize: 'none' }} />
+            <div style={{ fontSize: 12.5, color: 'var(--dark-hint)', marginTop: 10, lineHeight: 1.5 }}>Voice isn’t available here, so type it instead. Nothing is saved until you say so.</div>
           </div>
           <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 24 }}>
             <button type="button" className="btn-gold" style={{ width: '100%', opacity: typed.trim() ? 1 : 0.5 }} disabled={!typed.trim()} onClick={() => think(typed)}>Send to Ori</button>
@@ -275,7 +275,7 @@ function EditItem({ item, onDone }: { item: OriItem; onDone: (i: OriItem) => voi
     }
     onDone(next)
   }
-  const field: React.CSSProperties = { width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 12, padding: '9px 11px', color: 'var(--paper)', fontSize: 15, marginTop: 6, outline: 'none', colorScheme: 'dark' }
+  const field: React.CSSProperties = { width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 12, padding: '9px 11px', color: 'var(--on-dark)', fontSize: 15, marginTop: 6, outline: 'none', colorScheme: 'dark' }
   return (
     <div>
       <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Title" style={{ ...field, fontWeight: 800 }} onKeyDown={(e) => e.key === 'Enter' && save()} />

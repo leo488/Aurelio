@@ -41,7 +41,7 @@ function LeoPerformance() {
   const data = useData()
   const today = logicalToday()
   const s = leoStats(data, today)
-  const colour = { full: '#6E7F63', partial: '#B6C0AE', missed: '#E4DBCC', skipped: '#F0EAE0', none: '#F0EAE0' }
+  const colour = { full: 'var(--olive)', partial: 'var(--olive-pale)', missed: 'var(--heat-missed)', skipped: 'var(--heat-future)', none: 'var(--heat-future)' }
   return (
     <>
       <div className="pad" style={{ paddingTop: 30, display: 'flex', alignItems: 'center', gap: 18 }}>
@@ -69,7 +69,7 @@ function LeoPerformance() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 7 }}>
           {s.week.map((d) => (
             <div key={d.date} style={{ textAlign: 'center' }}>
-              <div title={d.date} style={{ aspectRatio: '1', borderRadius: 7, background: d.date === today && d.outcome !== 'full' ? '#C79A4A' : colour[d.outcome] }} />
+              <div title={d.date} style={{ aspectRatio: '1', borderRadius: 7, background: d.date === today && d.outcome !== 'full' ? 'var(--gold)' : colour[d.outcome] }} />
               <div style={{ fontSize: 10, color: 'var(--muted-3)', fontWeight: 800, marginTop: 6 }}>{WEEKDAY_LETTER[weekday(d.date)]}</div>
             </div>
           ))}

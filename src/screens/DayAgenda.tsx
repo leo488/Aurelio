@@ -21,7 +21,7 @@ export function DayAgenda() {
         <BackButton onClick={() => navigate(`/calendar?d=${day}&m=${day.slice(0, 7)}`)} />
         <div style={{ fontSize: 14, fontWeight: 800 }}>{WEEKDAY_LONG[weekday(day)]}, {monthDay(day)}</div>
         <button type="button" aria-label="Add a task" onClick={() => navigate(`/tasks/new?date=${day}`)} style={{ lineHeight: 0 }}>
-          <Icon name="plus" size={21} color="#A97C34" stroke={2} />
+          <Icon name="plus" size={21} color="var(--gold-text)" stroke={2} />
         </button>
       </div>
       <div className="pad" style={{ paddingTop: 18 }}>

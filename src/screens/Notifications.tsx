@@ -9,7 +9,7 @@ import type { AppNotification } from '../data/types'
 import { clock, dt, hhmm, logicalToday, minutesOf, nowMinutes, relativeDay } from '../lib/date'
 import { stepsOn } from '../lib/streak'
 
-const DOT: Record<AppNotification['kind'], string> = { routine: '#C79A4A', task: '#C79A4A', deadline: '#B4674A', partner: '#C79A4A', nudge: '#8A7E9B', catchup: '#C79A4A' }
+const DOT: Record<AppNotification['kind'], string> = { routine: 'var(--gold)', task: 'var(--gold)', deadline: 'var(--clay)', partner: 'var(--gold)', nudge: 'var(--iris)', catchup: 'var(--gold)' }
 
 export function Notifications() {
   const data = useData()
@@ -49,7 +49,7 @@ export function Notifications() {
     const read = n.status === 'read'
     return (
       <div key={n.id} style={{ display: 'flex', gap: 13, padding: '16px 0', borderBottom: last ? undefined : '1px solid var(--divider)', opacity: read ? 0.6 : 1 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: read ? '#DDD3C3' : DOT[n.kind], marginTop: 6, flex: '0 0 auto' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: read ? 'var(--dot-read)' : DOT[n.kind], marginTop: 6, flex: '0 0 auto' }} />
         <button type="button" style={{ flex: 1, textAlign: 'left' }} onClick={() => open(n)}>
           <div style={{ fontSize: 14.5, fontWeight: 700 }}>{n.title}</div>
           <div style={{ fontSize: 12.5, color: read ? 'var(--muted-3)' : 'var(--muted-2)', marginTop: 3 }}>{[when(n), n.body].filter(Boolean).join(' · ')}</div>
@@ -91,7 +91,7 @@ export function Notifications() {
           <div className="label" style={{ marginBottom: 14 }}>Next on the lock screen</div>
           <div style={{ borderRadius: 22, padding: '16px 17px', background: 'var(--ink)', color: 'var(--paper)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <svg width="18" height="18" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="#C79A4A" /><path d="M18 9c3.9 4 6.8 7.3 6.8 11.3A6.8 6.8 0 0 1 18 27a6.8 6.8 0 0 1-6.8-6.7c0-4 2.9-7.3 6.8-11.3Z" fill="#231A08" /></svg>
+              <svg width="18" height="18" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="var(--gold)" /><path d="M18 9c3.9 4 6.8 7.3 6.8 11.3A6.8 6.8 0 0 1 18 27a6.8 6.8 0 0 1-6.8-6.7c0-4 2.9-7.3 6.8-11.3Z" fill="var(--on-gold)" /></svg>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--glyph-close)', letterSpacing: '.04em' }}>AURELIO · now</div>
             </div>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginTop: 9 }}>{preview.title}</div>

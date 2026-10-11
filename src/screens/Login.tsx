@@ -9,6 +9,7 @@ import type { Role } from '../data/types'
 import { backendKind, getAuth } from '../services'
 import { AuthError, type Session } from '../services/backend'
 import { lastProfile } from '../services/pin'
+import { haptic } from '../lib/haptics'
 
 const PIN_LENGTH = 4
 
@@ -63,12 +64,12 @@ export function Login() {
   const back = () => setStep({ name: 'pick' })
 
   return (
-    <main className="screen no-bar" style={{ display: 'flex', flexDirection: 'column', background: 'var(--wash-login)' }}>
+    <main className="screen no-bar" style={{ display: 'flex', flexDirection: 'column', background: 'var(--wash-pin)' }}>
       <div className="pad top-12">
         <BackButton onClick={back} />
       </div>
       <div style={{ paddingTop: 22, textAlign: 'center' }}>
-        <Avatar user={role} size={78} style={{ display: 'block', margin: '0 auto' }} />
+        <Avatar user={role} size={78} style={{ display: 'block', margin: '0 auto', filter: 'var(--glow-avatar)' }} />
       </div>
       {step.name === 'pin' && (
         <PinPad
@@ -112,6 +113,7 @@ function PinPad({ title, sub, onComplete, footer }: { title: string; sub: string
   const press = async (d: string) => {
     if (busy || pin.length >= PIN_LENGTH) return
     const next = pin + d
+    haptic()
     setPin(next)
     setError('')
     if (next.length < PIN_LENGTH) return

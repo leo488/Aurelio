@@ -28,9 +28,9 @@ export function Calendar() {
     const list = tasksOn(data, iso)
     if (!list.length) return []
     const out: string[] = []
-    if (list.every((t) => t.completed)) out.push('#6E7F63')
-    else out.push('#8A7E9B')
-    if (list.some((t) => t.deadline && !t.completed)) out.push('#B4674A')
+    if (list.every((t) => t.completed)) out.push('var(--olive)')
+    else out.push('var(--iris)')
+    if (list.some((t) => t.deadline && !t.completed)) out.push('var(--clay)')
     return out
   }
 
@@ -86,7 +86,7 @@ export function Calendar() {
         </div>
       </div>
       <div className="pad" style={{ paddingTop: 20, display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-        {[['#8A7E9B', 'Planned'], ['#6E7F63', 'All done'], ['#B4674A', 'Deadline']].map(([c, l]) => (
+        {[['var(--iris)', 'Planned'], ['var(--olive)', 'All done'], ['var(--clay)', 'Deadline']].map(([c, l]) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--muted-2)', fontWeight: 600 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: c }} />{l}
           </div>
@@ -111,7 +111,7 @@ export function Calendar() {
                 <div style={{ fontSize: 15, fontWeight: 700, textDecoration: t.completed ? 'line-through' : undefined }}>{t.title}</div>
                 {(t.endTime || t.deadline || t.notes) && <div className="meta">{[t.endTime ? timeRange(t) : '', t.deadline ? 'Deadline' : '', t.notes ?? ''].filter(Boolean).join(' · ')}</div>}
               </Link>
-              <div style={{ width: 3, height: 28, borderRadius: 2, background: t.deadline ? '#B4674A' : t.priority === 'high' ? '#C79A4A' : 'transparent' }} />
+              <div style={{ width: 3, height: 28, borderRadius: 2, background: t.deadline ? 'var(--clay)' : t.priority === 'high' ? 'var(--gold)' : 'transparent' }} />
             </div>
           ))}
         </div>

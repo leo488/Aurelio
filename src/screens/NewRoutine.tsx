@@ -124,7 +124,7 @@ export function NewRoutine() {
         <input className="text-input display" autoFocus={!incoming && !state?.ask} value={name} onChange={(e) => setName(e.target.value)} placeholder="Name it" aria-label="Routine name"
           style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.03em' }} />
         <input className="text-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" aria-label="Description"
-          style={{ fontSize: 15, marginTop: 10 }} />
+          style={{ fontSize: 16, marginTop: 10 }} />
         <div style={{ height: 1, background: 'var(--divider-confirm)', marginTop: 14 }} />
       </div>
 
@@ -139,7 +139,7 @@ export function NewRoutine() {
         </div>
         {category === 'custom' && (
           <input className="text-input" value={categoryLabel} onChange={(e) => setCategoryLabel(e.target.value)} placeholder="Label it, e.g. Before class" aria-label="Custom label"
-            style={{ fontSize: 15, fontWeight: 700, marginTop: 14, padding: '12px 14px', background: '#fff', borderRadius: 14 }} />
+            style={{ fontSize: 16, fontWeight: 700, marginTop: 14, padding: '12px 14px', background: 'var(--white)', borderRadius: 14 }} />
         )}
       </div>
 
@@ -149,7 +149,7 @@ export function NewRoutine() {
           {ICONS.map((i) => (
             <button key={i} type="button" role="radio" aria-checked={icon === i} aria-label={i} onClick={() => setIcon(i)}
               style={{ width: 46, height: 46, borderRadius: 16, background: icon === i ? 'var(--ink)' : 'var(--chip-alt-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={i} size={21} color={icon === i ? '#C79A4A' : '#8E857B'} />
+              <Icon name={i} size={21} color={icon === i ? 'var(--gold)' : 'var(--muted-2)'} />
             </button>
           ))}
         </div>
@@ -190,10 +190,10 @@ export function NewRoutine() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 12 }}>
           {steps.map((st, i) => (
-            <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 18, background: '#fff' }}>
+            <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 18, background: 'var(--white)' }}>
               <div style={{ color: 'var(--muted-3)', fontSize: 12.5, fontWeight: 800, width: 16 }}>{i + 1}</div>
               <input className="text-input" value={st.title} aria-label={`Step ${i + 1}`} onChange={(e) => setSteps((xs) => xs.map((x) => (x.id === st.id ? { ...x, title: e.target.value } : x)))}
-                style={{ flex: 1, fontSize: 15, fontWeight: 700 }} />
+                style={{ flex: 1, fontSize: 16, fontWeight: 700 }} />
               {st.duration && <div style={{ fontSize: 12.5, color: 'var(--muted-2)', whiteSpace: 'nowrap' }}>{st.duration} min</div>}
               <button type="button" className="reorder-btn" aria-label={`Move ${st.title} up`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
               <button type="button" className="reorder-btn" aria-label={`Move ${st.title} down`} disabled={i === steps.length - 1} onClick={() => move(i, 1)}>↓</button>
@@ -201,12 +201,12 @@ export function NewRoutine() {
             </div>
           ))}
           {adding ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'var(--white)' }}>
               <input className="text-input" autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Step, then minutes (Stretch 5)" aria-label="New step"
-                onKeyDown={(e) => e.key === 'Enter' && addStep()} onBlur={addStep} style={{ fontSize: 15, fontWeight: 700 }} />
+                onKeyDown={(e) => e.key === 'Enter' && addStep()} onBlur={addStep} style={{ fontSize: 16, fontWeight: 700 }} />
             </div>
           ) : (
-            <button type="button" onClick={() => setAdding(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, border: '1px dashed #D5CAB8', color: 'var(--muted-2)' }}>
+            <button type="button" onClick={() => setAdding(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, border: '1px dashed var(--dashed)', color: 'var(--muted-2)' }}>
               <span style={{ fontSize: 15 }}>+</span><span style={{ fontSize: 15, fontWeight: 700 }}>Add step</span>
             </button>
           )}
@@ -221,7 +221,7 @@ export function NewRoutine() {
             <textarea autoFocus value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} aria-label="Describe the routine"
               placeholder="Create a 30-minute morning routine for me"
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void generate() } }}
-              style={{ width: '100%', background: '#fff', border: 'none', borderRadius: 14, padding: 12, fontSize: 15, lineHeight: 1.45, outline: 'none', resize: 'none' }} />
+              style={{ width: '100%', background: 'var(--white)', border: 'none', borderRadius: 14, padding: 12, fontSize: 16, lineHeight: 1.45, outline: 'none', resize: 'none' }} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn btn-ink" style={{ flex: 1, padding: 12 }} disabled={thinking || !prompt.trim()} onClick={() => void generate()}>Build it</button>
               <button type="button" className="btn btn-chip" style={{ padding: '12px 16px' }} onClick={() => setAsking(false)}>Cancel</button>

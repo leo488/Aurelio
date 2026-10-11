@@ -116,7 +116,7 @@ function Form({ task, presetDate, presetTitle, onDone }: { task?: Task; presetDa
       <div className="pad" style={{ paddingTop: 28 }}>
         <input className="text-input display" autoFocus={!task} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name it" aria-label="Task"
           onKeyDown={(e) => e.key === 'Enter' && save()} style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.03em' }} />
-        <input className="text-input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes" aria-label="Notes" style={{ fontSize: 15, marginTop: 12 }} />
+        <input className="text-input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes" aria-label="Notes" style={{ fontSize: 16, marginTop: 12 }} />
         <div style={{ height: 1, background: 'var(--divider-confirm)', marginTop: 14 }} />
       </div>
       <div className="pad" style={{ paddingTop: 18, display: 'flex', gap: 7, flexWrap: 'wrap' }}>
