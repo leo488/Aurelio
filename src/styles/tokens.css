@@ -71,6 +71,12 @@
   --heat-3: #a27a35;
   --heat-4: #d8ae5e;
   --app-mark: #1c2026;
+  --heat-off: #1c1f24;
+  --arrow-off: #30353c;
+  --ember-warm: #dcc38a;
+  --ember-core: #f7ebd3;
+  --check-mark: #eeebe6;
+  --input-line: #23272d;
 
   /* The screens that were always dark (runner, done, milestone, Ori voice). */
   --ink-dark-bg: #0a0b0e;
@@ -198,6 +204,12 @@
   --heat-3: #c9a869;
   --heat-4: #a97c34;
   --app-mark: #1a1714;
+  --heat-off: #ebe4d8;
+  --arrow-off: #d8d0c4;
+  --ember-warm: #dcc38a;
+  --ember-core: #f7ebd3;
+  --check-mark: #ffffff;
+  --input-line: #e7e0d5;
   --ink-dark-bg: #17150f;
   --on-dark: #f6f1e9;
   --dark-outline: #33302a;

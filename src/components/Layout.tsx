@@ -11,18 +11,18 @@ import { dayStreak } from '../lib/streak'
 import { BottomBar, type Tab } from './BottomBar'
 import { Toast } from './Toast'
 
-const HIDE_BAR = ['/', '/run', '/run/done', '/ori', '/ori/chat', '/milestone', '/routines/new', '/tasks/new', '/tasks/:id']
+const HIDE_BAR = ['/', '/run', '/run/done', '/ori', '/ori/chat', '/milestone', '/routines/new', '/routines/:id/edit', '/tasks/new', '/tasks/:id']
 const DARK = ['/run', '/run/done', '/ori', '/milestone']
 
 const TAB_FOR: [string, Tab][] = [
-  ['/today', 'today'], ['/welcome', 'today'], ['/missed', 'today'],
+  ['/today', 'today'], ['/welcome', 'today'],
   ['/routines', 'routines'], ['/routines/:id', 'routines'],
-  ['/profile', 'progress'], ['/streak', 'progress'], ['/settings', 'progress'],
-  ['/calendar', 'calendar'], ['/calendar/:day', 'calendar'], ['/tasks', 'tasks'],
-  ['/together', 'together'],
+  ['/streak', 'streaks'], ['/missed', 'streaks'],
+  ['/profile', 'you'], ['/notifications', 'you'], ['/notifications/settings', 'you'],
+  ['/calendar', 'calendar'], ['/tasks', 'upcoming'],
 ]
 
-/** Publish today's numbers (never the items) so the other person's Together screen can show them. */
+/** Publish today's numbers (never the items) so the other person's strip and profile can show them. */
 function useStatusPublisher() {
   const last = useRef('')
   const me = useData((s) => s.me)

@@ -14,9 +14,9 @@ async function firstLogin(name: 'Leo' | 'Sonia', pin: string) {
   fireEvent.click(await screen.findByRole('button', { name: 'Email me a code' }))
   fireEvent.change(await screen.findByLabelText('Code from the email'), { target: { value: '123456' } })
   fireEvent.click(screen.getByRole('button', { name: 'Verify' }))
-  await screen.findByText('Choose a PIN')
+  await screen.findByText('Create a 4-digit PIN')
   pressPin(pin)
-  await screen.findByText('Once more')
+  await screen.findByText('Confirm your PIN')
   pressPin(pin)
 }
 
@@ -48,7 +48,7 @@ describe('two people, two experiences', () => {
   test('Leo: first login with email code and a new PIN lands on routines', async () => {
     const { unmount } = renderApp()
     await firstLogin('Leo', '2468')
-    await screen.findByText(/routines completed/)
+    await screen.findByText(/routines done/)
     expect(screen.getByText('Morning Routine')).toBeTruthy()
     expect(screen.queryByText('Team meeting')).toBeNull()
     expect(screen.getByRole('link', { name: 'Routines' })).toBeTruthy()
@@ -63,6 +63,7 @@ describe('two people, two experiences', () => {
     await firstLogin('Sonia', '1357')
     await screen.findByText(/tasks today/)
     expect(screen.getByText('Send proposal')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Upcoming' })).toBeTruthy()
     expect(screen.queryByText('Morning Routine')).toBeNull()
     expect(screen.getByRole('link', { name: 'Calendar' })).toBeTruthy()
     unmount()
@@ -71,9 +72,9 @@ describe('two people, two experiences', () => {
 
   test('returning: straight to the PIN for the last profile; a wrong PIN is refused', async () => {
     const { unmount } = renderApp()
-    await screen.findByText('Hi Sonia')
+    await screen.findByText('Hi Sonia.')
     pressPin('0000')
-    await screen.findByText('Wrong PIN.')
+    await screen.findByText('That’s not it. Try again.')
     pressPin('1357')
     await screen.findByText(/tasks today/)
     unmount()
@@ -92,15 +93,14 @@ describe('two people, two experiences', () => {
     await lock()
   })
 
-  test('quick add puts a task on Sonia’s timeline without leaving Today', async () => {
+  test('quick add puts a task on Sonia’s plan without leaving Today', async () => {
     await act(async () => {
       const s = await getAuth().signInWithPin('sonia', '1357')
       useAuth.getState().setSession(s)
       await useData.getState().load(s.user)
     })
     const { unmount } = renderApp('/today')
-    fireEvent.click(await screen.findByRole('button', { name: /Add task/ }))
-    const input = screen.getByLabelText('New task')
+    const input = await screen.findByLabelText('Add a task for today')
     fireEvent.change(input, { target: { value: 'Pick up flowers 17:15' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await screen.findByText('Pick up flowers')

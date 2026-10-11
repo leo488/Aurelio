@@ -3,17 +3,17 @@ import type { Role } from '../data/types'
 import { Icon, type IconName } from './Icon'
 import { Ori } from './Ori'
 
-export type Tab = 'today' | 'routines' | 'progress' | 'calendar' | 'tasks' | 'together' | null
+export type Tab = 'today' | 'routines' | 'streaks' | 'calendar' | 'upcoming' | 'you' | null
 
 type TabDef = { tab: Exclude<Tab, null>; to: string; icon: IconName; label: string }
 
 const TODAY: TabDef = { tab: 'today', to: '/today', icon: 'sun', label: 'Today' }
-const TOGETHER: TabDef = { tab: 'together', to: '/together', icon: 'together', label: 'Together' }
+const YOU: TabDef = { tab: 'you', to: '/profile', icon: 'user', label: 'You' }
 
 /** Leo's bar is built around routines, Sonia's around her plan. Same five slots, Ori in the centre. */
 export const TABS: Record<Role, TabDef[]> = {
-  leo: [TODAY, { tab: 'routines', to: '/routines', icon: 'list', label: 'Routines' }, { tab: 'progress', to: '/profile', icon: 'flame', label: 'Progress' }, TOGETHER],
-  sonia: [TODAY, { tab: 'calendar', to: '/calendar', icon: 'calendar', label: 'Calendar' }, { tab: 'tasks', to: '/tasks', icon: 'list', label: 'Tasks' }, TOGETHER],
+  leo: [TODAY, { tab: 'routines', to: '/routines', icon: 'list', label: 'Routines' }, { tab: 'streaks', to: '/streak', icon: 'flame', label: 'Streaks' }, YOU],
+  sonia: [TODAY, { tab: 'calendar', to: '/calendar', icon: 'calendar', label: 'Calendar' }, { tab: 'upcoming', to: '/tasks', icon: 'list', label: 'Upcoming' }, YOU],
 }
 
 /** Only the active tab shows its label. */

@@ -1,87 +1,56 @@
-import { Link } from 'react-router-dom'
-import { StreakMark } from '../components/controls'
+import { Link, useNavigate } from 'react-router-dom'
 import { Ember } from '../components/Ember'
-import { Icon, ROUTINE_TINT } from '../components/Icon'
-import { CATEGORY_LABEL, categoryText, routineTime } from '../data/select'
+import { Icon } from '../components/Icon'
+import { catLook, PlusButton, ScreenHeader } from '../components/ui'
+import { categoryText, routineTime } from '../data/select'
 import { useData } from '../data/store'
-import type { Routine, TimeCategory } from '../data/types'
-import { addDays, daysLabel, logicalToday, looseTime } from '../lib/date'
-import { completionOf, outcome, routineStreak } from '../lib/streak'
+import type { TimeCategory } from '../data/types'
+import { daysLabel, logicalToday } from '../lib/date'
+import { routineStreak } from '../lib/streak'
 
 const ORDER: TimeCategory[] = ['morning', 'afternoon', 'evening', 'night', 'custom']
 
-/** Every routine, grouped by the part of the day it belongs to. No limit on how many. */
+/** Every routine, active first, then by time of day. No limit on how many. */
 export function Routines() {
   const data = useData()
+  const navigate = useNavigate()
   const today = logicalToday()
-  const active = data.routines.filter((r) => r.active)
-  const inactive = data.routines.filter((r) => !r.active)
-  const byTime = (a: Routine, b: Routine) => routineTime(a).localeCompare(routineTime(b))
-
-  // Custom routines group under their own label ("Before lunch"), the rest under the category name.
-  const groups = new Map<string, Routine[]>()
-  for (const cat of ORDER) {
-    for (const r of active.filter((x) => x.timeCategory === cat).sort(byTime)) {
-      const key = cat === 'custom' ? categoryText(r) : CATEGORY_LABEL[cat]
-      groups.set(key, [...(groups.get(key) ?? []), r])
-    }
-  }
-
-  const weekBars = (r: Routine) =>
-    Array.from({ length: 7 }, (_, i) => {
-      const d = addDays(today, i - 6)
-      const o = outcome(r, d, completionOf(data.completions, r.id, d))
-      return o === 'full' ? 'var(--olive)' : o === 'partial' ? 'var(--olive-pale)' : o === 'none' || o === 'skipped' ? 'var(--heat-future)' : d === today ? 'var(--heat-future)' : 'var(--heat-missed)'
-    })
+  const active = data.routines.filter((r) => r.active).length
+  const list = [...data.routines].sort((a, b) =>
+    Number(b.active) - Number(a.active) || ORDER.indexOf(a.timeCategory) - ORDER.indexOf(b.timeCategory) || routineTime(a).localeCompare(routineTime(b)))
 
   return (
     <main className="screen">
-      <div className="pad top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 className="title">Routines</h1>
-        <Link to="/routines/new" aria-label="New routine" style={{ padding: 4, lineHeight: 0 }}>
-          <Icon name="plus" size={24} stroke={1.9} />
-        </Link>
-      </div>
-      {data.routines.length === 0 && (
-        <div className="pad" style={{ paddingTop: 24, fontSize: 14, color: 'var(--muted-2)' }}>No routines yet. Tap + or ask Ori to build one.</div>
-      )}
-      {[...groups.entries()].map(([label, list]) => (
-        <div key={label} className="pad" style={{ paddingTop: 22 }}>
-          <div className="label">{label}</div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {list.map((r) => (
-              <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '16px 0', borderBottom: '1px solid var(--divider)', color: 'inherit', display: 'block' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Icon name={r.icon} size={22} color={ROUTINE_TINT[r.icon]} />
-                  <div style={{ flex: 1 }}>
-                    <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.022em' }}>{r.name}</div>
-                    <div className="meta">{[daysLabel(r.repeatPattern.days), r.scheduledTime ? looseTime(r.scheduledTime) : '', `${r.steps.length} step${r.steps.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</div>
-                  </div>
-                  <StreakMark n={routineStreak(r, data.completions, today).current} />
+      <ScreenHeader title="Routines" sub={`${active} active · ${data.routines.length - active} paused`} right={<PlusButton label="New routine" onClick={() => navigate('/routines/new')} />} />
+      <div className="pad" style={{ paddingTop: 12, display: 'flex', flexDirection: 'column' }}>
+        {list.map((r) => {
+          const look = catLook(r)
+          const streak = routineStreak(r, data.completions, today).current
+          return (
+            <Link key={r.id} to={`/routines/${r.id}`} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '16px 0', borderBottom: '1px solid var(--divider)', color: 'inherit', opacity: r.active ? 1 : 0.55 }}>
+              <Icon name={look.icon} size={22} color={look.color} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="display" style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-.022em' }}>{r.name}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--muted-2)', marginTop: 2 }}>
+                  {categoryText(r)} · {routineTime(r)} · {daysLabel(r.repeatPattern.days)} · {r.steps.length} {r.steps.length === 1 ? 'step' : 'steps'}
                 </div>
-                <div style={{ display: 'flex', gap: 4, marginTop: 13 }} aria-hidden="true">
-                  {weekBars(r).map((c, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: c }} />)}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ))}
-      {inactive.length > 0 && (
-        <div className="pad" style={{ paddingTop: 22 }}>
-          <div className="label">Inactive</div>
-          {inactive.map((r) => (
-            <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '16px 0', display: 'flex', alignItems: 'center', gap: 12, opacity: 0.55, color: 'inherit' }}>
-              <Icon name={r.icon} size={22} color="var(--muted-2)" />
-              <div style={{ flex: 1 }}>
-                <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.022em' }}>{r.name}</div>
-                <div className="meta">Inactive · streak of {routineStreak(r, data.completions, today).current} held</div>
               </div>
-              <Ember streak={0} size={17} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Ember streak={r.active ? streak : 0} size={17} />
+                <div className="display" style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.03em' }}>{streak}</div>
+              </div>
             </Link>
-          ))}
-        </div>
-      )}
+          )
+        })}
+        {data.routines.length === 0 && (
+          <div style={{ padding: '60px 10px 0', textAlign: 'center' }}>
+            <Ember streak={0} size={64} style={{ display: 'inline-block' }} />
+            <div className="display" style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-.025em', marginTop: 18 }}>No routines yet</div>
+            <div style={{ fontSize: 14, color: 'var(--muted-2)', marginTop: 8, lineHeight: 1.6 }}>Build one by hand, or tap Ori and say what you want.</div>
+            <button type="button" onClick={() => navigate('/routines/new')} style={{ marginTop: 20, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800, padding: '14px 22px', borderRadius: 18 }}>Create a routine</button>
+          </div>
+        )}
+      </div>
     </main>
   )
 }

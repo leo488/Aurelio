@@ -107,10 +107,10 @@ input, textarea, select { font-size: 16px; }
 .sheet-scrim { position: absolute; inset: 0; background: var(--scrim); animation: fade-in .2s ease; }
 .sheet {
   position: absolute; bottom: 0; width: min(100%, var(--app-max)); max-height: 92dvh; overflow-y: auto;
-  background: var(--paper); border-radius: 30px 30px 0 0; padding: 14px 26px calc(36px + var(--safe-bottom));
+  background: var(--paper); border-radius: 30px 30px 0 0; padding: 14px 26px calc(34px + var(--safe-bottom));
   animation: sheet-up .3s cubic-bezier(.2, .8, .2, 1);
 }
-.sheet-grabber { width: 40px; height: 4px; border-radius: 2px; background: var(--dot-read); margin: 0 auto 20px; }
+.sheet-grabber { width: 40px; height: 4px; border-radius: 2px; background: var(--dot-read); margin: 0 auto 18px; }
 
 /* Native pickers styled as the design's "value ›" text */
 .inline-picker { border: none; background: transparent; color: var(--muted-2); font-size: 16px; font-weight: 600; text-align: right; padding: 0; outline: none; }
@@ -126,12 +126,14 @@ button:disabled { cursor: default; }
 .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.8px solid var(--checkbox-off); transition: background .15s, border-color .15s; }
 .pin-dot.on { background: var(--ink); border-color: var(--ink); }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 16px 26px; justify-content: center; }
-.pin-key { width: 72px; height: 72px; border-radius: 50%; background: var(--white); -webkit-user-select: none; user-select: none; font-family: var(--font-display); font-size: 26px; font-weight: 600; text-align: center; transition: background .15s, transform .1s; }
+.pin-key { width: 76px; height: 66px; border-radius: 22px; background: var(--white); -webkit-user-select: none; user-select: none; font-family: var(--font-display); font-size: 27px; font-weight: 600; color: var(--ink); text-align: center; transition: background .15s, transform .1s; }
 .pin-key:active { background: var(--chip); transform: scale(.96); }
 .pin-key.ghost { background: transparent; font-family: var(--font-ui); font-size: 13.5px; font-weight: 800; color: var(--muted-2); }
+@keyframes shake { 0%,100% { transform: translateX(0) } 20% { transform: translateX(-8px) } 40% { transform: translateX(7px) } 60% { transform: translateX(-5px) } 80% { transform: translateX(3px) } }
 @keyframes pin-shake { 0%, 100% { transform: none } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
 
 /* Native-app feel: press feedback on links that act as buttons, no text selection on chrome. */
 .nav-tab, a.card, .chip, .pill-ink { -webkit-user-select: none; user-select: none; transition: transform .12s; }
 a:active { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { button:active, a:active { transform: none; } }
+@keyframes bar-grow { from { transform: scaleY(.08) } to { transform: none } }

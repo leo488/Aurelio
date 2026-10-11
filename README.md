@@ -78,4 +78,15 @@ Settings → Reset demo data puts the demo back.
   is fully closed need Web Push from a server. On iPhone they only work once Aurelio is on the Home Screen.
 - **Voice** uses the Web Speech API where the browser has it, and falls back to typing.
 
-Install and offline only work over HTTPS (or localhost), so test on a phone through a deployed preview.
+- **Screens** follow the dark prototype (`Aurelio Prototype v2 Dark`). Shared pieces such as rings, headers, step and
+  task rows and the task and reminder sheets live in `src/components/ui.tsx`. The old Together and Settings screens
+  were folded into each person's Today and You tabs; `/together` and `/settings` redirect to `/profile`.
+
+## Deploy and install
+
+Install and offline only work over HTTPS (or localhost). `.github/workflows/pages.yml` builds the app on every push to
+`claude/design-v2-llqmbc` and publishes it to the `gh-pages` branch, served at `https://leo488.github.io/aurelio/`.
+In the repository's Settings → Pages, set the source to "Deploy from a branch", `gh-pages`, `/ (root)` once.
+On Android, open that link in Chrome and tap Install app (or ⋮ → Add to Home screen).
+
+The build reads `BASE_PATH` (default `/`) so the same code works at a domain root or under a sub-path.

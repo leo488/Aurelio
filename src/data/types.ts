@@ -125,7 +125,10 @@ export interface Settings {
   notif: {
     /** Routine start reminders (Leo) or task reminders (Sonia). */
     reminders: boolean
+    /** Deadline and overdue warnings (Sonia); the 20:00 streak-at-risk check (Leo). */
     deadlines: boolean
+    /** Sonia's 08:00 summary of the day. Missing means on. */
+    summary?: boolean
     partner: boolean
     quiet: { on: boolean; from: string; to: string }
   }
