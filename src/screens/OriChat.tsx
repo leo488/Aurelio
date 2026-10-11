@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Ori } from '../components/Ori'
-import { displayName, useMe } from '../data/session'
-import { myRoutines } from '../data/select'
+import { PROFILES, ROLES } from '../config'
+import { useMe } from '../data/session'
 import { useData } from '../data/store'
 import { logicalToday } from '../lib/date'
 import { parseLocal, summarize } from '../lib/ori'
 import { answer } from '../lib/oriChat'
+import { isRoutineRequest } from '../lib/oriApply'
 
 interface Msg { me: boolean; text: string; id: number }
 
-const SUGGESTIONS = ['How’s my streak?', 'What did I miss?', 'Plan my week']
+const SUGGESTIONS = { leo: ['How’s my streak?', 'Create a 30-minute morning routine', 'What did I miss?'], sonia: ['What’s next?', 'How am I doing?', 'Plan my week'] }
 
 export function OriChat() {
   const { me } = useMe()
@@ -32,8 +33,11 @@ export function OriChat() {
     setTimeout(() => {
       const s = useData.getState()
       let reply = answer(t, s, me)
-      if (!reply) {
-        const ctx = { today: logicalToday(), now: new Date(), routines: myRoutines(s, me).map((r) => ({ id: r.id, name: r.name })), names: Object.values(displayName) }
+      if (!reply && me.role === 'leo' && isRoutineRequest(t)) {
+        reply = 'I’ll draft that so you can check it before saving.'
+        setTimeout(() => navigate('/ori', { replace: true, state: { text: t } }), 900)
+      } else if (!reply) {
+        const ctx = { today: logicalToday(), now: new Date(), routines: s.routines.map((r) => ({ id: r.id, name: r.name })), names: ROLES.map((r) => PROFILES[r].name) }
         const request = from ? `${from}, ${t}` : t
         const items = parseLocal(t, ctx)
         if (items.length) {
@@ -82,7 +86,7 @@ export function OriChat() {
       </div>
 
       <div style={{ padding: '12px 22px 0', display: 'flex', gap: 7, overflowX: 'auto', flex: '0 0 auto' }}>
-        {SUGGESTIONS.map((s) => <button key={s} type="button" className="chip soft" onClick={() => send(s)}>{s}</button>)}
+        {SUGGESTIONS[me.role].map((s) => <button key={s} type="button" className="chip soft" onClick={() => send(s)}>{s}</button>)}
       </div>
       <form style={{ padding: '14px 22px calc(36px + var(--safe-bottom) * .5)', flex: '0 0 auto' }} onSubmit={(e) => { e.preventDefault(); send(text) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid var(--bar-border)', borderRadius: 22, padding: '11px 12px 11px 16px' }}>

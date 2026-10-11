@@ -1,27 +1,39 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { Layout } from './components/Layout'
+import { Layout, Only } from './components/Layout'
 import { SvgDefs } from './components/SvgDefs'
+import { useData } from './data/store'
 import { Calendar } from './screens/Calendar'
 import { DayAgenda } from './screens/DayAgenda'
 import { EmptyDay } from './screens/EmptyDay'
+import { Login } from './screens/Login'
 import { Milestone } from './screens/Milestone'
 import { Missed } from './screens/Missed'
 import { NewRoutine } from './screens/NewRoutine'
-import { NewTask } from './screens/NewTask'
 import { Notifications } from './screens/Notifications'
 import { NotificationSettings } from './screens/NotificationSettings'
 import { OriChat } from './screens/OriChat'
 import { OriVoice } from './screens/OriVoice'
-import { ProfileSelect } from './screens/ProfileSelect'
+import { Profile } from './screens/Profile'
 import { RoutineDetail } from './screens/RoutineDetail'
 import { Routines } from './screens/Routines'
 import { RunDone } from './screens/RunDone'
 import { Runner } from './screens/Runner'
 import { Settings } from './screens/Settings'
+import { SoniaToday } from './screens/SoniaToday'
 import { Streak } from './screens/Streak'
+import { TaskForm } from './screens/TaskForm'
 import { Tasks } from './screens/Tasks'
 import { Today } from './screens/Today'
 import { Together } from './screens/Together'
+
+const leo = (el: React.ReactNode) => <Only role="leo">{el}</Only>
+const sonia = (el: React.ReactNode) => <Only role="sonia">{el}</Only>
+
+/** One app, two experiences: the signed-in role decides what Today is and which screens exist. */
+function Home() {
+  const role = useData((s) => s.me?.role)
+  return role === 'sonia' ? <SoniaToday /> : <Today />
+}
 
 export default function App() {
   return (
@@ -29,27 +41,31 @@ export default function App() {
       <SvgDefs />
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<ProfileSelect />} />
-          <Route path="/today" element={<Today />} />
-          <Route path="/welcome" element={<EmptyDay />} />
-          <Route path="/routines" element={<Routines />} />
-          <Route path="/routines/new" element={<NewRoutine />} />
-          <Route path="/routines/:id" element={<RoutineDetail />} />
-          <Route path="/run" element={<Runner />} />
-          <Route path="/run/done" element={<RunDone />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/calendar/:day" element={<DayAgenda />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/tasks/new" element={<NewTask />} />
-          <Route path="/ori" element={<OriVoice />} />
-          <Route path="/ori/chat" element={<OriChat />} />
-          <Route path="/streak" element={<Streak />} />
-          <Route path="/milestone" element={<Milestone />} />
-          <Route path="/missed" element={<Missed />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/today" element={<Home />} />
           <Route path="/together" element={<Together />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/notifications/settings" element={<NotificationSettings />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/ori" element={<OriVoice />} />
+          <Route path="/ori/chat" element={<OriChat />} />
+
+          <Route path="/welcome" element={leo(<EmptyDay />)} />
+          <Route path="/routines" element={leo(<Routines />)} />
+          <Route path="/routines/new" element={leo(<NewRoutine />)} />
+          <Route path="/routines/:id" element={leo(<RoutineDetail />)} />
+          <Route path="/run" element={leo(<Runner />)} />
+          <Route path="/run/done" element={leo(<RunDone />)} />
+          <Route path="/streak" element={leo(<Streak />)} />
+          <Route path="/milestone" element={leo(<Milestone />)} />
+          <Route path="/missed" element={leo(<Missed />)} />
+
+          <Route path="/calendar" element={sonia(<Calendar />)} />
+          <Route path="/calendar/:day" element={sonia(<DayAgenda />)} />
+          <Route path="/tasks" element={sonia(<Tasks />)} />
+          <Route path="/tasks/new" element={sonia(<TaskForm />)} />
+          <Route path="/tasks/:id" element={sonia(<TaskForm />)} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -1,4 +1,4 @@
-export type IconName = 'sun' | 'moon' | 'dumbbell' | 'book' | 'calendar' | 'list' | 'bell' | 'together' | 'plus' | 'gear'
+export type IconName = 'sun' | 'moon' | 'dumbbell' | 'book' | 'calendar' | 'list' | 'bell' | 'together' | 'plus' | 'gear' | 'flame'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   sun: (
@@ -43,6 +43,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  // Same silhouette as the 24px ember, as a line icon for the Progress tab.
+  flame: <path d="M12 3.4c3.2 3.4 5.6 6 5.6 9.2A5.6 5.6 0 0 1 12 18.2a5.6 5.6 0 0 1-5.6-5.6c0-3.2 2.4-5.8 5.6-9.2Z" />,
   gear: (
     <>
       <circle cx="12" cy="12" r="3.2" />

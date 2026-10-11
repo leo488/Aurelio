@@ -1,33 +1,37 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Chip, StreakMark } from '../components/controls'
+import { StreakMark } from '../components/controls'
 import { Ember } from '../components/Ember'
 import { Icon, ROUTINE_TINT } from '../components/Icon'
-import { useMe } from '../data/session'
-import { isShared, logOf, myRoutines, routineMeta, sessionDate } from '../data/select'
+import { CATEGORY_LABEL, categoryText, routineTime } from '../data/select'
 import { useData } from '../data/store'
-import type { Routine } from '../data/types'
-import { addDays, daysLabel, logicalToday } from '../lib/date'
-import { liveStreak, logKey, outcome, progress } from '../lib/streak'
+import type { Routine, TimeCategory } from '../data/types'
+import { addDays, daysLabel, logicalToday, looseTime } from '../lib/date'
+import { completionOf, outcome, routineStreak } from '../lib/streak'
 
-type Filter = 'Active' | 'Shared' | 'Paused'
+const ORDER: TimeCategory[] = ['morning', 'afternoon', 'evening', 'night', 'custom']
 
+/** Every routine, grouped by the part of the day it belongs to. No limit on how many. */
 export function Routines() {
   const data = useData()
-  const { me, partnerName } = useMe()
-  const [filter, setFilter] = useState<Filter>('Active')
   const today = logicalToday()
-  const all = myRoutines(data, me)
+  const active = data.routines.filter((r) => r.active)
+  const inactive = data.routines.filter((r) => !r.active)
+  const byTime = (a: Routine, b: Routine) => routineTime(a).localeCompare(routineTime(b))
 
-  const own = all.filter((r) => !isShared(r) && !r.paused)
-  const shared = all.filter(isShared)
-  const paused = all.filter((r) => r.paused && !isShared(r))
+  // Custom routines group under their own label ("Before lunch"), the rest under the category name.
+  const groups = new Map<string, Routine[]>()
+  for (const cat of ORDER) {
+    for (const r of active.filter((x) => x.timeCategory === cat).sort(byTime)) {
+      const key = cat === 'custom' ? categoryText(r) : CATEGORY_LABEL[cat]
+      groups.set(key, [...(groups.get(key) ?? []), r])
+    }
+  }
 
   const weekBars = (r: Routine) =>
     Array.from({ length: 7 }, (_, i) => {
       const d = addDays(today, i - 6)
-      const o = d === today ? 'none' : outcome(r, d, data.logs[logKey(d, r.id)])
-      return o === 'full' ? '#6E7F63' : o === 'partial' ? '#B6C0AE' : '#E2D9CB'
+      const o = outcome(r, d, completionOf(data.completions, r.id, d))
+      return o === 'full' ? '#6E7F63' : o === 'partial' ? '#B6C0AE' : o === 'none' || o === 'skipped' ? '#F0EAE0' : d === today ? '#F0EAE0' : '#E2D9CB'
     })
 
   return (
@@ -38,64 +42,46 @@ export function Routines() {
           <Icon name="plus" size={24} stroke={1.9} />
         </Link>
       </div>
-      <div className="pad" style={{ paddingTop: 18, display: 'flex', gap: 8 }}>
-        {(['Active', 'Shared', 'Paused'] as Filter[]).map((f) => (
-          <Chip key={f} active={filter === f} onClick={() => setFilter(f)}>{f}</Chip>
-        ))}
-      </div>
-      <div className="pad" style={{ paddingTop: 14, display: 'flex', flexDirection: 'column' }}>
-        {filter === 'Active' &&
-          own.map((r) => {
-            const daily = r.days.length === 7
-            return (
-              <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '18px 0', borderBottom: '1px solid var(--divider)', color: 'inherit', display: 'block' }}>
+      {data.routines.length === 0 && (
+        <div className="pad" style={{ paddingTop: 24, fontSize: 14, color: 'var(--muted-2)' }}>No routines yet. Tap + or ask Ori to build one.</div>
+      )}
+      {[...groups.entries()].map(([label, list]) => (
+        <div key={label} className="pad" style={{ paddingTop: 22 }}>
+          <div className="label">{label}</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {list.map((r) => (
+              <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '16px 0', borderBottom: '1px solid var(--divider)', color: 'inherit', display: 'block' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <Icon name={r.icon} size={22} color={ROUTINE_TINT[r.icon]} />
                   <div style={{ flex: 1 }}>
                     <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.022em' }}>{r.name}</div>
-                    <div className="meta">{routineMeta(r, partnerName, daysLabel(r.days))}</div>
+                    <div className="meta">{[daysLabel(r.repeatPattern.days), r.scheduledTime ? looseTime(r.scheduledTime) : '', `${r.steps.length} step${r.steps.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</div>
                   </div>
-                  <StreakMark n={liveStreak(r, today, logOf(data, r))} />
+                  <StreakMark n={routineStreak(r, data.completions, today).current} />
                 </div>
-                {daily && (
-                  <div style={{ display: 'flex', gap: 4, marginTop: 14 }}>
-                    {weekBars(r).map((c, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: c }} />)}
-                  </div>
-                )}
-              </Link>
-            )
-          })}
-        {(filter === 'Active' || filter === 'Shared') &&
-          shared.map((r) => {
-            const d = sessionDate(r, today)
-            const p = progress(r, d, data.logs[logKey(d, r.id)])
-            return (
-              <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '18px 26px', margin: '0 -26px', borderBottom: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--shared-bg)', color: 'inherit' }}>
-                <Icon name="together" size={22} color="#A97C34" />
-                <div style={{ flex: 1 }}>
-                  <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.022em', color: 'var(--shared-text)' }}>{r.name}</div>
-                  <div style={{ fontSize: 12.5, color: 'var(--shared-text-2)', marginTop: 2 }}>{routineMeta(r, partnerName, daysLabel(r.days))}</div>
+                <div style={{ display: 'flex', gap: 4, marginTop: 13 }} aria-hidden="true">
+                  {weekBars(r).map((c, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: c }} />)}
                 </div>
-                <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--shared-text-2)' }}>{p.done}/{p.total}</div>
               </Link>
-            )
-          })}
-        {(filter === 'Active' || filter === 'Paused') &&
-          paused.map((r) => (
-            <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '18px 0', display: 'flex', alignItems: 'center', gap: 12, opacity: 0.55, color: 'inherit' }}>
+            ))}
+          </div>
+        </div>
+      ))}
+      {inactive.length > 0 && (
+        <div className="pad" style={{ paddingTop: 22 }}>
+          <div className="label">Inactive</div>
+          {inactive.map((r) => (
+            <Link key={r.id} to={`/routines/${r.id}`} style={{ padding: '16px 0', display: 'flex', alignItems: 'center', gap: 12, opacity: 0.55, color: 'inherit' }}>
               <Icon name={r.icon} size={22} color="#8E857B" />
               <div style={{ flex: 1 }}>
                 <div className="display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.022em' }}>{r.name}</div>
-                <div className="meta">{routineMeta(r, partnerName, daysLabel(r.days))}</div>
+                <div className="meta">Inactive · streak of {routineStreak(r, data.completions, today).current} held</div>
               </div>
               <Ember streak={0} size={17} />
             </Link>
           ))}
-        {filter === 'Shared' && shared.length === 0 && <Empty text={`Nothing shared with ${partnerName} yet.`} />}
-        {filter === 'Paused' && paused.length === 0 && <Empty text="No paused routines." />}
-      </div>
+        </div>
+      )}
     </main>
   )
 }
-
-const Empty = ({ text }: { text: string }) => <div style={{ padding: '24px 0', fontSize: 14, color: 'var(--muted-2)' }}>{text}</div>

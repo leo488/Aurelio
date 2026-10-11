@@ -110,3 +110,13 @@ input, textarea, select { font: inherit; color: inherit; }
 .reorder-btn:disabled { opacity: .35; }
 button:disabled { cursor: default; }
 .month-arrow { color: var(--muted-3); font-size: 15px; font-weight: 700; padding: 0 4px; line-height: 1; }
+
+/* PIN entry: built from the existing chip, ink and display type. */
+.pin-dots { display: flex; gap: 16px; justify-content: center; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.8px solid var(--checkbox-off); transition: background .15s, border-color .15s; }
+.pin-dot.on { background: var(--ink); border-color: var(--ink); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 16px 26px; justify-content: center; }
+.pin-key { width: 72px; height: 72px; border-radius: 50%; background: var(--chip-alt-2); font-family: var(--font-display); font-size: 26px; font-weight: 600; text-align: center; transition: background .15s, transform .1s; }
+.pin-key:active { background: var(--chip); transform: scale(.96); }
+.pin-key.ghost { background: transparent; font-family: var(--font-ui); font-size: 13.5px; font-weight: 800; color: var(--muted-2); }
+@keyframes pin-shake { 0%, 100% { transform: none } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }

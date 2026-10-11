@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ProgressRing } from '../components/controls'
-import { pronoun, useMe } from '../data/session'
-import { logOf, nowRoutine } from '../data/select'
+import { completionFor, nowRoutine } from '../data/select'
 import { useData } from '../data/store'
 import { clock, logicalToday } from '../lib/date'
-import { itemLabel } from '../lib/labels'
-import { itemsOn } from '../lib/streak'
+import { stepLabel } from '../lib/labels'
+import { stepsOn } from '../lib/streak'
 
 /** Focus mode: one item at a time. Mark done, skip, or push to later. */
 export function Runner() {
   const data = useData()
-  const { me } = useMe()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const today = logicalToday()
-  const r = data.routines.find((x) => x.id === params.get('r')) ?? nowRoutine(data, me)?.routine
-  const items = r ? itemsOn(r, today) : []
-  const log = r ? logOf(data, r) : undefined
-  const isDone = (id: string) => !!log?.doneItemIds.includes(id)
+  const r = data.routines.find((x) => x.id === params.get('r')) ?? nowRoutine(data)?.routine
+  const items = r ? stepsOn(r, today) : []
+  const log = r ? completionFor(data, r, today) : undefined
+  const isDone = (id: string) => !!log?.completedStepIds.includes(id)
   const [idx, setIdx] = useState(() => Math.max(0, items.findIndex((i) => !isDone(i.id))))
   const [time, setTime] = useState(clock())
 
@@ -37,13 +35,10 @@ export function Runner() {
   const next = items.slice(idx + 1).find((i) => !isDone(i.id))
 
   const advance = (markDone: boolean) => {
-    let doneNow = new Set(log?.doneItemIds ?? [])
+    let doneNow = new Set(log?.completedStepIds ?? [])
     if (markDone && !isDone(current.id)) {
-      const res = data.toggleItem(r.id, current.id)
+      data.toggleStep(r.id, current.id)
       doneNow = new Set([...doneNow, current.id])
-      if (res.completedRoutine) {
-        data.addActivity({ who: me, kind: 'routine-done', text: `finished ${pronoun[me].their} ${r.name.toLowerCase()}`, routineId: r.id })
-      }
     }
     const n = items.findIndex((it, i) => i > idx && !doneNow.has(it.id))
     if (n === -1) navigate(`/run/done?r=${r.id}`, { replace: true })
@@ -66,8 +61,8 @@ export function Runner() {
             <div className="label" style={{ color: '#79706A', marginTop: 6 }}>Done</div>
           </ProgressRing>
         </div>
-        <div className="display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.03em', marginTop: 36 }} aria-live="polite">{itemLabel(current)}</div>
-        <div style={{ fontSize: 14.5, color: 'var(--muted-back)', marginTop: 9 }}>{next ? `Next: ${itemLabel(next)}` : 'Last one'}</div>
+        <div className="display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.03em', marginTop: 36 }} aria-live="polite">{stepLabel(current)}</div>
+        <div style={{ fontSize: 14.5, color: 'var(--muted-back)', marginTop: 9 }}>{next ? `Next: ${stepLabel(next)}` : 'Last one'}</div>
       </div>
       <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', gap: 7, justifyContent: 'center', marginBottom: 14 }}>

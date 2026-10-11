@@ -2,32 +2,31 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Ember } from '../components/Ember'
 import { flash } from '../components/Toast'
 import { useMe } from '../data/session'
-import { logOf, myRoutines } from '../data/select'
 import { useData } from '../data/store'
 import { addDays, dayMonth, logicalToday } from '../lib/date'
 import { routinePlural } from '../lib/labels'
-import { liveStreak } from '../lib/streak'
+import { routineStreak } from '../lib/streak'
 import { numberWord } from '../lib/words'
 
 /** Shown at 7, 25, 50 and 100. No confetti. */
 export function Milestone() {
   const data = useData()
-  const { me, partner, partnerName } = useMe()
+  const { partner, partnerName } = useMe()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const today = logicalToday()
-  const r = data.routines.find((x) => x.id === params.get('r')) ?? myRoutines(data, me).find((x) => x.owner === me)
+  const r = data.routines.find((x) => x.id === params.get('r')) ?? data.routines[0]
   if (!r) return null
-  const n = liveStreak(r, today, logOf(data, r))
+  const st = routineStreak(r, data.completions, today)
+  const n = st.current
   const since = dayMonth(addDays(today, -(n - 1)))
-  const toRecord = r.streak.longest - n + 1
+  const toRecord = st.longest > n ? st.longest - n + 1 : 0
   const record = toRecord > 0 ? `${numberWord(toRecord)} more and you beat your own record.` : 'That’s your longest run yet.'
 
   const tell = () => {
-    data.addActivity({ who: me, kind: 'streak', text: 'reached', value: n, routineId: r.id })
-    data.pushNotice(partner, { kind: 'partner', title: `${me === 'leo' ? 'Leo' : 'Soniya'} reached ${n} ${routinePlural(r.name)} in a row`, meta: '' })
+    data.addActivity({ kind: 'streak', text: `reached ${n} ${routinePlural(r.name)} in a row`, value: n })
     navigate('/together')
-    flash(`Sent to ${partnerName}`)
+    flash(partner ? `${partnerName} will see it on Together` : 'Saved to your activity')
   }
 
   return (

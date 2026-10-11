@@ -1,40 +1,77 @@
 # Aurelio
 
-Mobile-first PWA for Leo and Soniya: routines with streaks, tasks, a calendar, a shared "Together" layer,
-notifications and Ori, the assistant. Built from `design_handoff_aurelio_pwa/` (the prototype HTML wins on any visual conflict).
+A private PWA for two people. **Leo** gets routines, steps, streaks and stats. **Sonia** gets a daily planner with
+tasks, reminders and a calendar. A light shared layer lets each see the other's progress numbers, send encouragement
+and set reminders for each other. Built from `design_handoff_aurelio_pwa/` (the prototype HTML wins on any visual conflict).
 
-Stack: Vite + React + TypeScript, React Router, Zustand (persisted to localStorage), vite-plugin-pwa (Workbox), self-hosted fonts.
+Stack: Vite + React + TypeScript, React Router, Zustand, vite-plugin-pwa (Workbox), self-hosted fonts, optional Supabase.
 
 ```sh
 npm install
-npm run dev       # local dev server
+npm run dev       # local dev server (local mode, demo data)
 npm run build     # type-check + production build with service worker
 npm run preview   # serve the build (install/offline testing)
-npm test          # vitest: streak rules, Ori parser, smoke test
+npm test          # vitest: streaks, stats, AI drafts, DB mapping, login and privacy flows
 npm run lint      # oxlint
 npm run icons     # regenerate PWA icons from the app mark
 ```
 
-## Layout
+## How it fits together
 
-- `src/screens/` one file per route (21 screens). `src/sheets/` the item and routine sheets.
-- `src/components/` shared pieces: Avatar, Ori, Ember, Icon, Toggle, Chip, Check, ProgressRing, BottomBar, Toast, Sheet, Heatmap.
-- `src/data/` types, seed data, the persisted store and selectors. Everything is local in v1.
-- `src/lib/streak.ts` the streak rules (full +1, ≥60% holds, <60% resets, skips neutral, paused frozen, day ends at 4am).
-- `src/lib/ori.ts` turns a request into events, tasks, deadlines and routine edits.
-- `src/lib/reminders.ts` routine-start, deadline and catch-up notifications.
-- `src/styles/tokens.css` colours, gradients, radii, spacing, keyframes.
+```
+screens ─▶ useData (src/data/store.ts) ─▶ services (src/services/index.ts) ─▶ Backend
+                                                                              ├─ local: localStorage + demo seed
+                                                                              └─ supabase: Postgres + RLS, offline outbox
+```
+
+- `src/config.ts` the two profiles. Their emails come from env, nothing else can sign in and there is no registration.
+- `src/services/backend.ts` the storage and auth contracts. Adding another database means writing one `Backend`.
+- `src/services/supabase/` the Supabase backend; `supabase/schema.sql` its tables and Row Level Security.
+- `src/lib/streak.ts` streaks from completion records, against each routine's schedule (not calendar days):
+  full day +1, ≥60% holds, <60% resets, skipped/unscheduled/inactive days are neutral, the day ends at 4am.
+  Each completion stores the steps that were required that day, and schedule changes are kept as history,
+  so editing a routine never rewrites past streaks.
+- `src/lib/stats.ts` Leo's and Sonia's profile numbers, including Sonia's planning streak (days with ≥60% of the plan done).
+- `src/lib/routineDraft.ts` AI routine creation: structured JSON, validated, reviewed in the New Routine form, saved only on Save.
+- `src/lib/reminders.ts` reminders derived from routines and tasks, plus nudges between the two people.
+
+## Sign-in
+
+First time on a device: pick a profile, enter the code sent to that profile's email, create a 4 to 8 digit PIN.
+After that: "Who are you?", then the PIN. The app locks again when it is closed. Nothing private renders before sign-in.
+
+PINs are never stored as typed. The device keeps a salted PBKDF2 hash (210k iterations) with a lockout that backs off
+after 5 misses. With Supabase, the account password is a PBKDF2 secret derived from the PIN and email, so a PIN also
+works on a second device. A short PIN is still a short password: the email code is the real gate, and new sign-ups
+must stay off in Supabase.
+
+## Configuration
+
+Copy `.env.example` to `.env.local`.
+
+| Variable | What it does |
+| --- | --- |
+| `VITE_LEO_EMAIL`, `VITE_SONIA_EMAIL` | The only two accounts. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Turn on the database. Leave empty for local mode. |
+| `VITE_ORI_ENDPOINT` | Optional server endpoint for Ori and AI routine drafts. Never put an API key in the app. |
+
+**Local mode** (no Supabase vars) keeps everything in this browser with demo data, and the email code is `123456`.
+Settings → Reset demo data puts the demo back.
+
+### Supabase setup
+
+1. Create a project. In Authentication → Providers → Email, turn off "Allow new users to sign up".
+2. Edit the two emails at the top of `supabase/schema.sql`, then run it in the SQL editor.
+3. Authentication → Users → Add user, once for each email (no password needed).
+4. Authentication → Email Templates → Magic Link: include `{{ .Token }}` so the email carries the 6-digit code.
+5. Set the env vars above where the app is built.
 
 ## Things to know
 
-- **One device, two profiles.** v1 keeps both people on the same device behind the profile picker, as the handoff allows.
-  Syncing two phones needs a small backend (Supabase or Firebase).
-- **Ori runs offline by default** with a rule-based parser. To use an LLM instead, set `VITE_ORI_ENDPOINT` to a server-side
-  endpoint that takes `{ transcript, now, today, routines }` and returns `{ items: [...] }` as described in the handoff.
-  Never put an API key in the app.
-- **Voice** uses the Web Speech API where the browser has it, and falls back to typing everywhere else.
-- **Reminders** are shown by the service worker while the app is open or recently backgrounded. Reminders while the app is
-  fully closed need Web Push from a server. On iPhone they only work once Aurelio is on the Home Screen.
-- **Demo data** is generated relative to today on first launch. Settings → Reset demo data puts it back.
+- **Offline:** the app shell is cached by the service worker. With Supabase, writes made offline are queued and sent
+  when the connection is back, and the PIN unlocks offline on a device that has signed in before.
+- **Reminders** are shown by the service worker while the app is open or recently backgrounded. Reminders while the app
+  is fully closed need Web Push from a server. On iPhone they only work once Aurelio is on the Home Screen.
+- **Voice** uses the Web Speech API where the browser has it, and falls back to typing.
 
 Install and offline only work over HTTPS (or localhost), so test on a phone through a deployed preview.

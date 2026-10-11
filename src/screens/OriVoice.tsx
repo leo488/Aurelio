@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Ori, OriListening, OriThinking } from '../components/Ori'
 import { flash } from '../components/Toast'
-import { displayName, useMe } from '../data/session'
-import { myRoutines } from '../data/select'
+import { PROFILES, ROLES } from '../config'
+import { useMe } from '../data/session'
 import { useData } from '../data/store'
 import { dateOf, logicalToday, relativeDay, shortDate, timeOf, WEEKDAY_SHORT, weekday } from '../lib/date'
 import { parseRequest, summarize, typeColor, typeLabel, type OriItem } from '../lib/ori'
-import { applyOriItems, firstDate } from '../lib/oriApply'
+import { applyOriItems, firstDate, isRoutineRequest } from '../lib/oriApply'
+import { generateRoutine } from '../lib/routineDraft'
 import { getRecognition, type Recognition } from '../lib/speech'
 import { numberWord, numberWordLower } from '../lib/words'
 
@@ -26,7 +27,7 @@ const describe = (i: OriItem) => {
 
 /** Ori's voice overlay: listening → thinking → confirm. Falls back to typing with no dead end. */
 export function OriVoice() {
-  const { me } = useMe()
+  const { me, partnerName } = useMe()
   const navigate = useNavigate()
   const location = useLocation()
   const preset = (location.state as { text?: string } | null)?.text
@@ -51,18 +52,25 @@ export function OriVoice() {
     setTranscript(text)
     setPhase('thinking')
     const started = Date.now()
-    const ctx = { today, now: new Date(), routines: myRoutines(useData.getState(), me).map((r) => ({ id: r.id, name: r.name })), names: Object.values(displayName) }
+    // Leo can ask for a whole routine; it opens as a draft to review, never saved straight away.
+    if (me.role === 'leo' && isRoutineRequest(text)) {
+      const draft = await generateRoutine(text)
+      await new Promise((r) => setTimeout(r, Math.max(0, 900 - (Date.now() - started))))
+      navigate('/routines/new', { replace: true, state: { draft } })
+      return
+    }
+    const ctx = { today, now: new Date(), routines: useData.getState().routines.map((r) => ({ id: r.id, name: r.name })), names: ROLES.map((r) => PROFILES[r].name) }
     const result = await parseRequest(text, ctx)
     await new Promise((r) => setTimeout(r, Math.max(0, 900 - (Date.now() - started))))
     if (result.length === 0) return setPhase('nothing')
     setSorted({ count: result.length, summary: summarize(result) })
     await new Promise((r) => setTimeout(r, 1100))
-    const confirm = useData.getState().settings[me].oriConfirm
+    const confirm = useData.getState().settings?.oriConfirm ?? true
     if (result.length === 1 || !confirm) {
       // Small edits apply straight away, with Undo.
-      const undo = applyOriItems(result, me)
+      const undo = applyOriItems(result)
       const r = result[0]
-      navigate(r.type === 'routineEdit' ? `/routines/${r.routineId}` : `/calendar?d=${firstDate(result)}`, { replace: true })
+      navigate(r.type === 'routineEdit' ? `/routines/${r.routineId}` : me.role === 'sonia' ? `/calendar?d=${firstDate(result)}` : '/today', { replace: true })
       flash(result.length === 1 ? (r.type === 'routineEdit' ? r.title : `Added ${r.title}`) : `${numberWord(result.length)} items added`, { label: 'Undo', run: undo })
       return
     }
@@ -114,10 +122,10 @@ export function OriVoice() {
   }
 
   const create = () => {
-    applyOriItems(items, me)
+    applyOriItems(items)
     const d = firstDate(items)
     const sameDay = items.every((i) => dateOf(i.start ?? i.due) === d)
-    navigate(`/calendar?d=${d}`, { replace: true })
+    navigate(me.role === 'sonia' ? `/calendar?d=${d}` : '/today', { replace: true })
     flash(`${numberWord(items.length)} items added${sameDay ? ` to ${relativeDay(d, today) === 'Today' ? 'today' : relativeDay(d, today)}` : ''}`)
   }
 
@@ -189,7 +197,7 @@ export function OriVoice() {
             <Ori size={40} />
             <div>
               <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>I couldn’t place that.</div>
-              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6, lineHeight: 1.6 }}>I can add events, tasks, reminders and deadlines, or move a routine. Try “Lunch with {displayName[me === 'leo' ? 'soniya' : 'leo']} Friday at one”.</div>
+              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6, lineHeight: 1.6 }}>{me.role === 'leo' ? <>I can build a routine for you to review, or move one. Try “Create a 30-minute morning routine”.</> : <>I can add tasks, appointments, reminders and deadlines. Try “Lunch with {partnerName} Friday at one”.</>}</div>
             </div>
           </div>
           <div className="pad dark-bottom" style={{ marginTop: 'auto', display: 'flex', gap: 10 }}>

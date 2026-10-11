@@ -1,178 +1,150 @@
-import { addDays, dt, logicalToday, weekday } from '../lib/date'
-import { isScheduled, itemsOn, logKey } from '../lib/streak'
-import type { Activity, CalEvent, DayLog, Notice, Routine, RoutineItem, Settings, Task, User } from './types'
+import { addDays, logicalToday } from '../lib/date'
+import { completionId, isScheduled, stepsOn } from '../lib/streak'
+import type { Activity, AppNotification, Routine, RoutineCompletion, RoutineStep, Settings, Task, User } from './types'
+import { PROFILES } from '../config'
+
+// Demo data for local mode, generated relative to today so it always looks lived-in.
+// Only used when no database is configured.
 
 const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6]
+const WEEKDAYS = [0, 1, 2, 3, 4]
 
-const item = (id: string, name: string, extra: Partial<RoutineItem> = {}, days = EVERY_DAY): RoutineItem => ({
-  id, name, days, countsTowardStreak: true, ...extra,
-})
-
-export const defaultSettings = (): Settings => ({
-  notif: { routineStart: true, deadlines: true, partner: false, quiet: { on: true, from: '22:30', to: '06:15' } },
+export const defaultSettings = (userId: string, now = new Date()): Settings => ({
+  id: userId,
+  userId,
+  notif: { reminders: true, deadlines: true, partner: true, quiet: { on: true, from: '22:30', to: '06:15' } },
   oriConfirm: true,
+  updatedAt: now.toISOString(),
 })
-
-/** Days before `today` going back: the last `current` scheduled days are full (with the odd partial or skip), then one miss. */
-function history(r: Routine, today: string, current: number, todayDone: string[], days = 120): Record<string, DayLog> {
-  const logs: Record<string, DayLog> = {}
-  let fullLeft = current
-  let broke = false
-  let n = 0
-  for (let i = 1; i <= days; i++) {
-    const date = addDays(today, -i)
-    if (!isScheduled(r, date)) continue
-    n++
-    const ids = itemsOn(r, date).map((it) => it.id)
-    let done = ids
-    let skipped = false
-    if (fullLeft > 0) {
-      // A partial day every so often holds the run without adding to it.
-      if (n % 9 === 4) done = ids.slice(0, Math.ceil(ids.length * 0.8))
-      else if (n % 17 === 8) skipped = true
-      else fullLeft--
-    } else if (!broke) {
-      done = ids.slice(0, 1)
-      broke = true
-    } else {
-      const roll = (i * 7919 + r.id.length * 31) % 10
-      if (roll < 1) done = ids.slice(0, 1)
-      else if (roll < 3) done = ids.slice(0, Math.ceil(ids.length * 0.8))
-    }
-    logs[logKey(date, r.id)] = { date, routineId: r.id, doneItemIds: done, skipped: skipped || undefined }
-  }
-  if (todayDone.length) logs[logKey(today, r.id)] = { date: today, routineId: r.id, doneItemIds: todayDone }
-  return logs
-}
 
 export interface SeedData {
+  profiles: User[]
   routines: Routine[]
+  completions: RoutineCompletion[]
   tasks: Task[]
-  events: CalEvent[]
-  logs: Record<string, DayLog>
-  settings: Record<User, Settings>
+  notifications: AppNotification[]
   activity: Activity[]
-  inbox: Record<User, Notice[]>
-  settledThrough: string
+  settings: Settings[]
 }
 
-export function seed(now = new Date()): SeedData {
+export function seed(now = new Date(), ids: { leo: string; sonia: string } = { leo: 'leo', sonia: 'sonia' }): SeedData {
   const today = logicalToday(now)
-  const yesterday = addDays(today, -1)
-  const created = addDays(today, -400)
-  const t = now.getTime()
+  const iso = now.toISOString()
+  const created = addDays(today, -120)
+  const at = (date: string, time: string) => new Date(`${date}T${time}:00`).toISOString()
 
-  const routine = (r: Omit<Routine, 'createdAt' | 'remind' | 'paused'> & Partial<Routine>): Routine => ({
-    remind: true, paused: false, createdAt: created, ...r,
+  const step = (id: string, title: string, duration?: number, days = EVERY_DAY): RoutineStep => ({ id, title, duration, days, countsTowardStreak: true })
+  const routine = (r: Pick<Routine, 'id' | 'name' | 'icon' | 'timeCategory' | 'scheduledTime' | 'steps'> & Partial<Routine>): Routine => ({
+    userId: ids.leo, repeatPattern: { type: 'weekly', days: EVERY_DAY }, reminder: { enabled: true, minutesBefore: 10 },
+    active: true, createdAt: created, updatedAt: iso, ...r,
   })
 
   const routines: Routine[] = [
     routine({
-      id: 'leo-morning', owner: 'leo', name: 'Morning', icon: 'sun', time: '06:30', days: EVERY_DAY,
-      items: [
-        item('water', 'Drink water'), item('pray', 'Pray'), item('exercise', 'Exercise', { durationMin: 20 }),
-        item('shower', 'Shower'), item('read', 'Read', { durationMin: 30, shared: true }),
-      ],
-      streak: { current: 23, longest: 41 },
+      id: 'leo-morning', name: 'Morning Routine', icon: 'sun', timeCategory: 'morning', scheduledTime: '06:30',
+      steps: [step('m-water', 'Drink water'), step('m-pray', 'Pray', 5), step('m-exercise', 'Exercise', 20), step('m-shower', 'Shower', 10), step('m-read', 'Read', 20), step('m-work', 'Start work')],
+      reminder: { enabled: true, minutesBefore: 15 },
     }),
     routine({
-      id: 'leo-evening', owner: 'leo', name: 'Evening', icon: 'moon', time: '21:00', days: EVERY_DAY,
-      items: [item('tidy', 'Tidy the kitchen', { durationMin: 10 }), item('plan', 'Plan tomorrow', { durationMin: 5 }), item('stretch', 'Stretch', { durationMin: 10 })],
-      streak: { current: 8, longest: 19 },
+      id: 'leo-deep', name: 'Deep Work', icon: 'book', timeCategory: 'custom', categoryLabel: 'Before lunch', scheduledTime: '09:30',
+      repeatPattern: { type: 'weekly', days: WEEKDAYS },
+      steps: [step('d-phone', 'Phone in the drawer', undefined, WEEKDAYS), step('d-plan', 'Pick one thing', 5, WEEKDAYS), step('d-focus', 'Focus block', 90, WEEKDAYS)],
     }),
     routine({
-      id: 'leo-gym', owner: 'leo', name: 'Gym', icon: 'dumbbell', time: '18:00', days: [0, 2, 4],
-      items: [
-        item('warm', 'Warm up', { durationMin: 5 }, [0, 2, 4]), item('push', 'Push day', { durationMin: 40 }, [0, 2, 4]),
-        item('cool', 'Cool down', { durationMin: 10 }, [0, 2, 4]), item('log', 'Log the session', {}, [0, 2, 4]),
-      ],
-      streak: { current: 5, longest: 12 },
+      id: 'leo-workout', name: 'Workout', icon: 'dumbbell', timeCategory: 'afternoon', scheduledTime: '17:30',
+      repeatPattern: { type: 'weekly', days: [0, 2, 4] },
+      steps: [step('w-warm', 'Warm up', 5, [0, 2, 4]), step('w-main', 'Strength', 40, [0, 2, 4]), step('w-cool', 'Cool down', 10, [0, 2, 4])],
     }),
     routine({
-      id: 'leo-study', owner: 'leo', name: 'Study', icon: 'book', time: '19:30', days: [0, 1, 2, 3, 4], paused: true,
-      items: [item('notes', 'Review notes', { durationMin: 25 }, [0, 1, 2, 3, 4]), item('problems', 'Practice problems', { durationMin: 45 }, [0, 1, 2, 3, 4])],
-      streak: { current: 12, longest: 15 },
+      id: 'leo-evening', name: 'Evening Routine', icon: 'moon', timeCategory: 'evening', scheduledTime: '20:30',
+      steps: [step('e-tidy', 'Tidy the kitchen', 10), step('e-plan', 'Plan tomorrow', 5), step('e-stretch', 'Stretch', 10)],
     }),
     routine({
-      id: 'soniya-morning', owner: 'soniya', name: 'Morning', icon: 'sun', time: '07:00', days: EVERY_DAY,
-      items: [
-        item('s-stretch', 'Stretch', { durationMin: 10 }), item('s-water', 'Drink water'), item('s-journal', 'Journal', { durationMin: 10 }),
-        item('s-shower', 'Shower'), item('s-read', 'Read', { durationMin: 30, shared: true }),
-      ],
-      streak: { current: 11, longest: 19 },
+      id: 'leo-night', name: 'Night Routine', icon: 'moon', timeCategory: 'night', scheduledTime: '22:30',
+      steps: [step('n-phone', 'Phone on charge'), step('n-pray', 'Pray', 5), step('n-lights', 'Lights out')],
     }),
     routine({
-      id: 'soniya-evening', owner: 'soniya', name: 'Evening', icon: 'moon', time: '21:30', days: EVERY_DAY,
-      items: [item('s-dishes', 'Dishes'), item('s-bag', 'Pack tomorrow’s bag'), item('s-skin', 'Skincare'), item('s-phone', 'Phone away by 22:30')],
-      streak: { current: 6, longest: 14 },
-    }),
-    routine({
-      id: 'both-sunday', owner: 'both', sharedWith: 'soniya', name: 'Sunday reset', icon: 'sun', time: '10:00', days: [6],
-      items: ['Laundry', 'Groceries', 'Clean the bathroom', 'Meal prep', 'Water the plants', 'Plan the week'].map((n, i) => item(`sr-${i}`, n, {}, [6])),
-      streak: { current: 3, longest: 7 },
+      id: 'leo-study', name: 'Study', icon: 'book', timeCategory: 'evening', scheduledTime: '19:00', repeatPattern: { type: 'weekly', days: WEEKDAYS },
+      steps: [step('s-notes', 'Review notes', 25, WEEKDAYS), step('s-problems', 'Practice problems', 45, WEEKDAYS)],
+      active: false, inactiveRanges: [{ from: addDays(today, -9) }],
     }),
   ]
 
-  const byId = Object.fromEntries(routines.map((r) => [r.id, r]))
-  const sundayThisWeek = addDays(today, 6 - weekday(today))
-  const logs: Record<string, DayLog> = {
-    ...history(byId['leo-morning'], today, 23, ['water', 'pray', 'exercise']),
-    ...history(byId['leo-evening'], today, 8, []),
-    ...history(byId['leo-gym'], today, 5, []),
-    ...history(byId['soniya-morning'], today, 11, ['s-stretch', 's-water', 's-journal', 's-shower', 's-read']),
-    ...history(byId['soniya-evening'], today, 6, []),
-    ...history(byId['both-sunday'], today, 3, []),
+  // History: the last 12 days are clean (a partial here and there), the day before that came apart,
+  // and older days are a believable mix.
+  const completions: RoutineCompletion[] = []
+  const record = (r: Routine, date: string, done: string[], extra: Partial<RoutineCompletion> = {}) => {
+    const required = stepsOn(r, date).filter((s) => s.countsTowardStreak).map((s) => s.id)
+    completions.push({
+      id: completionId(r.id, date), routineId: r.id, userId: r.userId, date, completedStepIds: done, requiredStepIds: required,
+      completedAt: required.every((id) => done.includes(id)) ? at(date, r.scheduledTime ?? '12:00') : undefined, updatedAt: iso, ...extra,
+    })
   }
-  logs[logKey(sundayThisWeek, 'both-sunday')] = { date: sundayThisWeek, routineId: 'both-sunday', doneItemIds: ['sr-0', 'sr-1'] }
-  if (logs[logKey(today, 'soniya-morning')]) logs[logKey(today, 'soniya-morning')].finishedAt = t - 20 * 60000
+  for (let i = 1; i <= 120; i++) {
+    const date = addDays(today, -i)
+    routines.forEach((r, k) => {
+      if (!isScheduled(r, date)) return
+      const ids_ = stepsOn(r, date).map((s) => s.id)
+      if (i <= 12) {
+        const partial = (i + k) % 9 === 4
+        record(r, date, partial ? ids_.slice(0, Math.ceil(ids_.length * 0.7)) : ids_)
+      } else if (i === 13) {
+        record(r, date, ids_.slice(0, 1))
+      } else {
+        const roll = (i * 7919 + k * 31) % 10
+        if (roll === 0) return
+        record(r, date, roll < 3 ? ids_.slice(0, Math.ceil(ids_.length * 0.7)) : ids_)
+      }
+    })
+  }
+  // Today: the morning is under way.
+  record(routines[0], today, ['m-water', 'm-pray', 'm-exercise'], { startedAt: at(today, '06:32') })
 
-  const nextWeekday = (wd: number) => addDays(today, ((wd - weekday(today) + 7) % 7) || 7)
-  const friday = nextWeekday(4)
-  const saturday = nextWeekday(5)
-
-  const tasks: Task[] = [
-    { id: 'gym-membership', owner: 'leo', title: 'Renew gym membership', due: dt(yesterday, '23:59'), isDeadline: true, priority: 'high', shared: false, done: false },
-    { id: 'lab', owner: 'leo', title: 'Submit lab report', due: dt(today, '23:59'), isDeadline: true, remindAt: dt(today, '09:00'), priority: 'high', shared: false, done: false },
-    { id: 'assign', owner: 'leo', title: 'Work on assignment', notes: `due ${relativeWeekday(friday)}`, due: dt(today, '16:00'), remindAt: dt(today, '16:00'), durationMin: 60, isDeadline: false, priority: 'med', shared: false, done: false },
-    { id: 'print', owner: 'leo', title: 'Print reading list', isDeadline: false, priority: 'low', shared: false, done: false },
-    { id: 'restaurant', owner: 'both', title: 'Book the restaurant', due: saturday, isDeadline: false, priority: 'med', shared: true, assignee: 'soniya', done: false },
-    { id: 's-landlord', owner: 'soniya', title: 'Call the landlord', due: dt(today, '12:30'), isDeadline: false, priority: 'med', shared: false, done: false },
-    { id: 's-library', owner: 'soniya', title: 'Return library books', due: dt(addDays(today, 3), '23:59'), isDeadline: true, priority: 'low', shared: false, done: false },
-  ]
-
-  const events: CalEvent[] = [
-    { id: 'standup', owner: 'leo', title: 'Standup', start: dt(today, '10:00'), end: dt(today, '10:15') },
-    { id: 'ds', owner: 'leo', title: 'Data Structures', start: dt(today, '09:00'), end: dt(today, '12:00'), location: 'Room B4' },
-    { id: 'lunch', owner: 'both', title: 'Lunch', start: dt(today, '13:00'), end: dt(today, '14:00'), shared: true },
-    { id: 's-studio', owner: 'soniya', title: 'Studio session', start: dt(today, '15:00'), end: dt(today, '17:00') },
-  ]
+  // Sonia's planner: past days mostly done, today laid out, a few things coming up.
+  const task = (t: Pick<Task, 'id' | 'title'> & Partial<Task>): Task => ({
+    userId: ids.sonia, priority: 'medium', completed: false, createdAt: iso, updatedAt: iso, ...t,
+  })
+  const PAST = ['Reply to Hannah', 'Grocery order', 'Gym class', 'Pay the electricity bill', 'Draft the newsletter', 'Call the bank', 'Pick up dry cleaning', 'Prep slides', 'Water the plants', 'Book train tickets']
+  const tasks: Task[] = []
+  for (let i = 1; i <= 21; i++) {
+    const date = addDays(today, -i)
+    const n = 2 + ((i * 5) % 3)
+    for (let k = 0; k < n; k++) {
+      // Two things slipped and are still open (they show as overdue); everything else got done.
+      const done = !((i === 9 && k === 1) || (i === 2 && k === 1))
+      const start = `${String(9 + k * 3).padStart(2, '0')}:00`
+      tasks.push(task({
+        id: `s-past-${i}-${k}`, title: PAST[(i * 3 + k) % PAST.length], date, startTime: start,
+        completed: done, completedAt: done ? at(date, `${String(10 + k * 3).padStart(2, '0')}:15`) : undefined,
+      }))
+    }
+  }
+  const tomorrow = addDays(today, 1)
+  tasks.push(
+    task({ id: 's-meeting', title: 'Team meeting', date: today, startTime: '09:00', endTime: '10:00', completed: true, completedAt: at(today, '10:00') }),
+    task({ id: 's-proposal', title: 'Send proposal', date: today, startTime: '11:30', priority: 'high', reminderAt: `${today}T11:15`, notes: 'Final version is in the shared drive' }),
+    task({ id: 's-doctor', title: 'Doctor appointment', date: today, startTime: '14:00', endTime: '14:45', reminderAt: `${today}T13:30` }),
+    task({ id: 's-mum', title: 'Call Mum', date: today, startTime: '18:00', reminderAt: `${today}T17:45` }),
+    task({ id: 's-yoga', title: 'Yoga', date: tomorrow, startTime: '07:30', endTime: '08:15' }),
+    task({ id: 's-review', title: 'Quarterly review prep', date: tomorrow, startTime: '13:00', priority: 'high' }),
+    task({ id: 's-library', title: 'Return library books', date: addDays(today, 3), deadline: true, priority: 'low', reminderAt: `${addDays(today, 1)}T09:00` }),
+    task({ id: 's-dinner', title: 'Dinner with Leo', date: addDays(today, 4), startTime: '19:30' }),
+    task({ id: 's-dentist', title: 'Book a dentist check-up', priority: 'low' }),
+  )
 
   const activity: Activity[] = [
-    { id: 'a1', who: 'soniya', kind: 'routine-done', text: 'finished her morning', at: t - 20 * 60000, routineId: 'soniya-morning' },
-    { id: 'a2', who: 'leo', kind: 'streak', text: 'reached', value: 23, routineId: 'leo-morning', at: t - 26 * 3600000, cheeredBy: 'soniya' },
+    { id: 'a-1', userId: ids.sonia, kind: 'day-done', text: 'finished everything on today’s plan', createdAt: at(addDays(today, -1), '18:40') },
+    { id: 'a-2', userId: ids.leo, kind: 'streak', text: 'reached a 7-day streak', value: 7, createdAt: at(addDays(today, -5), '07:10'), cheeredBy: ids.sonia },
   ]
 
-  const at = (date: string, time: string) => new Date(`${date}T${time}:00`).getTime()
-  const inbox: Record<User, Notice[]> = {
-    leo: [
-      { id: 'n1', kind: 'routine', title: 'Morning starts in 10 minutes', meta: 'Routine reminder', at: at(today, '06:20'), read: false, opened: true },
-      { id: 'n2', kind: 'deadline', title: 'Lab report is due tonight', meta: 'Deadline warning', at: at(today, '09:00'), read: false, taskId: 'lab' },
-      { id: 'n3', kind: 'partner', title: 'Soniya shared “Sunday reset”', meta: '', at: at(yesterday, '20:14'), read: true, opened: true },
-      { id: 'n4', kind: 'catchup', title: '2 items left before bed', meta: 'Catch-up', at: at(yesterday, '20:00'), read: true, opened: true },
-    ],
-    soniya: [
-      { id: 'n5', kind: 'routine', title: 'Morning starts in 10 minutes', meta: 'Routine reminder', at: at(today, '06:50'), read: false, opened: true },
-      { id: 'n6', kind: 'partner', title: 'Leo cheered your morning', meta: '', at: at(yesterday, '08:10'), read: true, opened: true },
-    ],
-  }
+  const notifications: AppNotification[] = [
+    { id: 'n-1', userId: ids.leo, kind: 'routine', title: 'Morning Routine starts in 15 minutes', body: 'Drink water, pray, exercise', refType: 'routine', refId: 'leo-morning', scheduledFor: at(today, '06:15'), status: 'read', createdAt: at(today, '06:15') },
+    { id: 'n-2', userId: ids.leo, kind: 'partner', title: 'Sonia sent you some encouragement', scheduledFor: at(addDays(today, -1), '20:14'), status: 'read', fromUserId: ids.sonia, createdAt: at(addDays(today, -1), '20:14') },
+    { id: 'n-3', userId: ids.sonia, kind: 'task', title: 'Team meeting in 15 minutes', refType: 'task', refId: 's-meeting', scheduledFor: at(today, '08:45'), status: 'read', createdAt: at(today, '08:45') },
+  ]
 
-  return {
-    routines, tasks, events, logs, activity, inbox,
-    settings: { leo: defaultSettings(), soniya: defaultSettings() },
-    settledThrough: yesterday,
-  }
-}
+  const profiles: User[] = (['leo', 'sonia'] as const).map((role) => ({ id: ids[role], role, name: PROFILES[role].name, email: PROFILES[role].email }))
+  const settings = [ids.leo, ids.sonia].map((u) => defaultSettings(u, now))
 
-function relativeWeekday(iso: string) {
-  return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][weekday(iso)]
+  return { profiles, routines, completions, tasks, notifications, activity, settings }
 }

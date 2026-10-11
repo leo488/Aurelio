@@ -1,49 +1,65 @@
 import { useNavigate } from 'react-router-dom'
-import { Avatar } from '../components/Avatar'
-import { Row, Toggle } from '../components/controls'
+import { BackButton, Row, Toggle } from '../components/controls'
 import { flash } from '../components/Toast'
-import { useMe, useSession } from '../data/session'
-import { myRoutines } from '../data/select'
+import { resetLocalDemo } from '../boot'
+import { useAuth, useMe } from '../data/session'
 import { useData } from '../data/store'
+import { backendKind, getAuth } from '../services'
 
 export function Settings() {
   const data = useData()
-  const { me, name, partnerName } = useMe()
-  const setUser = useSession((s) => s.setUser)
+  const { me } = useMe()
   const navigate = useNavigate()
-  const s = data.settings[me]
-  const active = myRoutines(data, me).filter((r) => !r.paused).length
-  const notifOn = s.notif.routineStart || s.notif.deadlines || s.notif.partner
+  const s = data.settings!
+  const notifOn = s.notif.reminders || s.notif.deadlines || s.notif.partner
+  const local = backendKind() === 'local'
+
+  const lock = async () => {
+    await getAuth().signOut()
+    useAuth.getState().setSession(null)
+    useData.getState().clear()
+    navigate('/', { replace: true })
+  }
 
   return (
     <main className="screen" style={{ background: 'var(--wash-settings)' }}>
-      <div className="pad" style={{ paddingTop: 'calc(var(--safe-top) + 20px)', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Avatar user={me} size={62} />
-        <div>
-          <h1 className="display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.03em', margin: 0 }}>{name}</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-2)', marginTop: 2 }}>Paired with {partnerName}</div>
-        </div>
+      <div className="pad top-12" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <BackButton onClick={() => navigate('/profile')} />
+        <div style={{ fontSize: 15, fontWeight: 800 }}>Settings</div>
       </div>
-      <div className="pad" style={{ paddingTop: 30, display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <div className="pad" style={{ paddingTop: 26, display: 'flex', flexDirection: 'column', gap: 22 }}>
         <div>
           <div className="label" style={{ marginBottom: 4 }}>Your day</div>
-          <Row title="Routines" value={`${active} active ›`} onClick={() => navigate('/routines')} />
+          {me.role === 'leo' ? (
+            <Row title="Routines" value={`${data.routines.filter((r) => r.active).length} active ›`} onClick={() => navigate('/routines')} />
+          ) : (
+            <Row title="Tasks" value={`${data.tasks.filter((t) => !t.completed).length} open ›`} onClick={() => navigate('/tasks')} />
+          )}
           <Row title="Notifications" value={`${notifOn ? 'On' : 'Off'} ›`} onClick={() => navigate('/notifications/settings')} />
-          <Row last title="Streak rules" value="60% threshold ›" onClick={() => navigate('/streak')} />
+          {me.role === 'leo' && <Row last title="Streak rules" value="60% threshold ›" onClick={() => navigate('/streak')} />}
         </div>
         <div>
           <div className="label" style={{ marginBottom: 4 }}>Ori</div>
-          <Row title="Confirm before creating" sub="Always for 2+ items" right={<Toggle label="Confirm before creating" on={s.oriConfirm} onChange={(v) => data.updateSettings(me, { oriConfirm: v })} />} />
+          <Row title="Confirm before creating" sub="Always for 2+ items" right={<Toggle label="Confirm before creating" on={s.oriConfirm} onChange={(v) => data.updateSettings({ oriConfirm: v })} />} />
           <Row last title="What Ori can see" value="Your data only ›" onClick={() => navigate('/ori/chat')} />
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button type="button" className="btn btn-chip" style={{ flex: 1 }} onClick={() => { setUser(null); navigate('/') }}>Switch profile</button>
-          <button type="button" className="btn btn-chip" style={{ padding: '15px 18px', fontWeight: 700, color: 'var(--muted-2)' }} onClick={() => navigate('/welcome')}>First day</button>
+        <div>
+          <div className="label" style={{ marginBottom: 4 }}>Account</div>
+          <Row title="Signed in as" value={me.email} />
+          <Row last title="Data" value={local ? 'On this device' : 'Synced'} />
         </div>
-        <button type="button" style={{ fontSize: 12.5, color: 'var(--muted-3)', fontWeight: 700, alignSelf: 'center' }}
-          onClick={() => { if (window.confirm('Reset all demo data on this device?')) { data.resetDemo(); flash('Demo data restored') } }}>
-          Reset demo data
-        </button>
+        <button type="button" className="btn btn-chip" onClick={() => void lock()}>Lock and switch profile</button>
+        {local && (
+          <button type="button" style={{ fontSize: 12.5, color: 'var(--muted-3)', fontWeight: 700, alignSelf: 'center' }}
+            onClick={() => {
+              if (!window.confirm('Reset all demo data on this device?')) return
+              resetLocalDemo()
+              void data.load(me)
+              flash('Demo data restored')
+            }}>
+            Reset demo data
+          </button>
+        )}
       </div>
     </main>
   )
