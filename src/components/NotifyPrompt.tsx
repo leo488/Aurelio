@@ -16,7 +16,7 @@ export function NotifyPrompt() {
         <div style={{ fontSize: 13, color: 'var(--chip-suggest-text)', lineHeight: 1.45, marginTop: 3 }}>
           {needsInstall
             ? 'On iPhone, reminders arrive once Aurelio is on your Home Screen. Tap Share, then Add to Home Screen.'
-            : 'Routine starts, deadlines and a catch-up in the evening. Nothing during quiet hours.'}
+            : 'Reminders for what you’ve planned, and nudges from each other. Nothing during quiet hours.'}
         </div>
         {!needsInstall && (
           <button type="button" className="pill-ink" style={{ marginTop: 10, display: 'inline-block' }}

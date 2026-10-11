@@ -1,17 +1,30 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check } from '../components/controls'
+import { Chip } from '../components/controls'
 import { Icon } from '../components/Icon'
-import { useMe } from '../data/session'
-import { isOverdue, myTasks, taskMeta } from '../data/select'
+import { TaskRow } from '../components/tasks'
+import { byTime, overdueTasks, somedayTasks, tasksOn, upcomingTasks } from '../data/select'
 import { useData } from '../data/store'
-import type { Task } from '../data/types'
+import { logicalToday } from '../lib/date'
 
-const rank = (t: Task) => (t.done ? 3 : isOverdue(t) ? 0 : t.due ? 1 : 2)
+type View = 'Open' | 'Done'
 
+/** Every task in one list: overdue, today, upcoming and someday. */
 export function Tasks() {
   const data = useData()
-  const { me, partnerName } = useMe()
-  const tasks = [...myTasks(data, me)].sort((a, b) => rank(a) - rank(b) || (a.due ?? '').localeCompare(b.due ?? '') || Number(a.shared) - Number(b.shared))
+  const [view, setView] = useState<View>('Open')
+  const today = logicalToday()
+
+  const sections: [string, ReturnType<typeof tasksOn>][] = view === 'Open'
+    ? [
+        ['Overdue', overdueTasks(data, today)],
+        ['Today', tasksOn(data, today).filter((t) => !t.completed)],
+        ['Upcoming', upcomingTasks(data, today, 365).filter((t) => !t.completed)],
+        ['Someday', somedayTasks(data).filter((t) => !t.completed)],
+      ]
+    : [['Completed', data.tasks.filter((t) => t.completed).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '') || byTime(a, b)).slice(0, 50)]]
+
+  const empty = sections.every(([, l]) => l.length === 0)
 
   return (
     <main className="screen">
@@ -21,25 +34,18 @@ export function Tasks() {
           <Icon name="plus" size={24} stroke={1.9} />
         </Link>
       </div>
-      <div className="pad" style={{ paddingTop: 20, display: 'flex', flexDirection: 'column' }}>
-        {tasks.length === 0 && <div style={{ fontSize: 14, color: 'var(--muted-2)', padding: '20px 0' }}>No tasks. Tap + or ask Ori.</div>}
-        {tasks.map((t) => {
-          const overdue = isOverdue(t)
-          return (
-            <button key={t.id} type="button" onClick={() => data.toggleTask(t.id)} aria-pressed={t.done}
-              style={{ display: 'flex', gap: 13, alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid var(--divider)', width: '100%', textAlign: 'left' }}>
-              <Check done={t.done} overdue={overdue} style={{ marginTop: 1 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15.5, ...(t.done ? { color: 'var(--muted-4)', textDecoration: 'line-through' } : { fontWeight: 700 }) }}>{t.title}</div>
-                <div style={{ fontSize: 12.5, marginTop: 3, ...(overdue ? { color: 'var(--clay)', fontWeight: 700 } : { color: 'var(--muted-2)' }) }}>{taskMeta(t, me, partnerName)}</div>
-              </div>
-              {!t.done && t.priority === 'high' && (
-                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--clay)', background: 'var(--clay-badge)', padding: '4px 9px', borderRadius: 99 }}>High</div>
-              )}
-            </button>
-          )
-        })}
+      <div className="pad" style={{ paddingTop: 18, display: 'flex', gap: 8 }}>
+        {(['Open', 'Done'] as View[]).map((v) => <Chip key={v} active={view === v} onClick={() => setView(v)}>{v}</Chip>)}
       </div>
+      {empty && <div className="pad" style={{ fontSize: 14, color: 'var(--muted-2)', paddingTop: 20 }}>{view === 'Open' ? 'Nothing open. Tap + or ask Ori.' : 'Nothing completed yet.'}</div>}
+      {sections.filter(([, l]) => l.length).map(([label, list]) => (
+        <div key={label} className="pad" style={{ paddingTop: 20 }}>
+          <div className="label" style={label === 'Overdue' ? { color: 'var(--clay)' } : undefined}>{label}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', marginTop: 2 }}>
+            {list.map((t) => <TaskRow key={t.id} task={t} showDate={label !== 'Today'} />)}
+          </div>
+        </div>
+      ))}
     </main>
   )
 }

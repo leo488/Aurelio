@@ -1,15 +1,15 @@
-import type { User } from '../data/types'
+import type { Role } from '../data/types'
 
 /**
  * Flat illustrated avatars, copied from the prototype. Small sizes (≤26px) drop the
  * neck, body or smile exactly as the design does.
  */
-export function Avatar({ user, size, style }: { user: User; size: number; style?: React.CSSProperties }) {
+export function Avatar({ user, size, style }: { user: Role; size: number; style?: React.CSSProperties }) {
   const small = size <= 26
   const tiny = size <= 18
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ flex: '0 0 auto', ...style }} aria-label={user === 'leo' ? 'Leo' : 'Soniya'}>
-      <g clipPath="url(#cc)">{user === 'leo' ? <Leo small={small} large={size >= 132} /> : <Soniya small={small} tiny={tiny} large={size >= 132} />}</g>
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ flex: '0 0 auto', ...style }} aria-label={user === 'leo' ? 'Leo' : 'Sonia'}>
+      <g clipPath="url(#cc)">{user === 'leo' ? <Leo small={small} large={size >= 132} /> : <Sonia small={small} tiny={tiny} large={size >= 132} />}</g>
     </svg>
   )
 }
@@ -35,7 +35,7 @@ function Leo({ small, large }: { small: boolean; large: boolean }) {
   )
 }
 
-function Soniya({ small, tiny, large }: { small: boolean; tiny: boolean; large: boolean }) {
+function Sonia({ small, tiny, large }: { small: boolean; tiny: boolean; large: boolean }) {
   return (
     <>
       <rect width="100" height="100" fill="#F0DFC6" />

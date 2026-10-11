@@ -1,14 +1,14 @@
 import { useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useMe } from '../data/session'
-import { eventsOn, myRoutines, tasksOn } from '../data/select'
+import { Check } from '../components/controls'
+import { QuickAdd } from '../components/tasks'
+import { tasksOn, timeRange } from '../data/select'
 import { useData } from '../data/store'
-import { fromISO, logicalToday, monthDay, MONTHS, timeOf, toISO, weekday, WEEKDAY_LETTER } from '../lib/date'
-import { logKey, outcome } from '../lib/streak'
+import { fromISO, logicalToday, monthDay, MONTHS, toISO, weekday, WEEKDAY_LETTER, WEEKDAY_LONG } from '../lib/date'
 
+/** Sonia's planner: pick a day and its tasks are right there to tick, edit or add to. */
 export function Calendar() {
   const data = useData()
-  const { me, partnerName } = useMe()
   const [params, setParams] = useSearchParams()
   const today = logicalToday()
   const selected = params.get('d') ?? today
@@ -24,26 +24,18 @@ export function Calendar() {
     setParams({ d: selected, m: toISO(d).slice(0, 7) }, { replace: true })
   }
 
-  const routines = myRoutines(data, me)
   const dots = (iso: string) => {
+    const list = tasksOn(data, iso)
+    if (!list.length) return []
     const out: string[] = []
-    if (iso < today && routines.some((r) => outcome(r, iso, data.logs[logKey(iso, r.id)]) === 'full')) out.push('#6E7F63')
-    if (eventsOn(data, me, iso).length) out.push('#8A7E9B')
-    if (tasksOn(data, me, iso).some((t) => t.isDeadline && !t.done)) out.push('#B4674A')
+    if (list.every((t) => t.completed)) out.push('var(--olive)')
+    else out.push('var(--iris)')
+    if (list.some((t) => t.deadline && !t.completed)) out.push('var(--clay)')
     return out
   }
 
-  const items = [
-    ...eventsOn(data, me, selected).map((e) => ({
-      key: e.id, color: e.shared ? '#C79A4A' : '#8A7E9B', title: e.shared ? `${e.title} with ${partnerName}` : e.title,
-      meta: e.shared ? `${timeOf(e.start)} · shared` : `${timeOf(e.start)} – ${timeOf(e.end)}`, sort: e.start,
-    })),
-    ...tasksOn(data, me, selected).map((t) => ({
-      key: t.id, color: t.isDeadline ? '#B4674A' : '#C79A4A', title: t.title,
-      meta: [timeOf(t.due) ?? 'Any time', t.durationMin ? `${t.durationMin >= 60 ? `${t.durationMin / 60}h` : `${t.durationMin} min`}` : ''].filter(Boolean).join(' · '),
-      sort: t.due ?? '', done: t.done,
-    })),
-  ].sort((a, b) => a.sort.localeCompare(b.sort))
+  const items = tasksOn(data, selected)
+  const left = items.filter((t) => !t.completed).length
 
   return (
     <main className="screen" style={{ paddingBottom: 0 }}>
@@ -56,7 +48,9 @@ export function Calendar() {
             <button type="button" aria-label="Next month" onClick={() => shiftMonth(1)} className="month-arrow">›</button>
           </div>
         </div>
-        <Link to="/tasks" className="chip" style={{ background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontWeight: 800, padding: '9px 14px' }}>Tasks</Link>
+        {selected !== today && (
+          <button type="button" className="chip" style={{ background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontWeight: 800, padding: '9px 14px' }} onClick={() => go(today)}>Today</button>
+        )}
       </div>
       <div
         style={{ padding: '22px 22px 0' }}
@@ -92,7 +86,7 @@ export function Calendar() {
         </div>
       </div>
       <div className="pad" style={{ paddingTop: 20, display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-        {[['#6E7F63', 'Routine done'], ['#8A7E9B', 'Event'], ['#B4674A', 'Deadline']].map(([c, l]) => (
+        {[['var(--iris)', 'Planned'], ['var(--olive)', 'All done'], ['var(--clay)', 'Deadline']].map(([c, l]) => (
           <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--muted-2)', fontWeight: 600 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: c }} />{l}
           </div>
@@ -100,21 +94,28 @@ export function Calendar() {
       </div>
       <div style={{ marginTop: 22, background: 'var(--chip-alt-2)', borderRadius: '28px 28px 0 0', padding: '20px 26px calc(130px + var(--safe-bottom))', minHeight: 230 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <div className="display" style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.022em' }}>{monthDay(selected)}</div>
-          <Link to={`/calendar/${selected}`} style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--gold-text)' }}>Open day</Link>
+          <div>
+            <div className="display" style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.022em' }}>{WEEKDAY_LONG[weekday(selected)]}, {monthDay(selected)}</div>
+            <div className="meta">{items.length === 0 ? 'Nothing planned' : `${items.length} task${items.length === 1 ? '' : 's'} · ${left} left`}</div>
+          </div>
+          <Link to={`/calendar/${selected}`} style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--gold-text)' }}>Timeline</Link>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 10 }}>
-          {items.length === 0 && <div style={{ padding: '14px 0', fontSize: 14, color: 'var(--muted-2)' }}>Nothing planned yet.</div>}
-          {items.map((it, i) => (
-            <div key={it.key} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '14px 0', borderBottom: i < items.length - 1 ? '1px solid var(--divider-confirm)' : undefined, opacity: 'done' in it && it.done ? 0.55 : 1 }}>
-              <div style={{ width: 3, height: 28, borderRadius: 2, background: it.color }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, textDecoration: 'done' in it && it.done ? 'line-through' : undefined }}>{it.title}</div>
-                <div className="meta">{it.meta}</div>
-              </div>
+          {items.map((t, i) => (
+            <div key={t.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '13px 0', borderBottom: i < items.length - 1 ? '1px solid var(--divider-confirm)' : undefined, opacity: t.completed ? 0.55 : 1 }}>
+              <div style={{ width: 44, fontSize: 12, fontWeight: 800, color: 'var(--muted-3)', flex: '0 0 auto' }}>{t.startTime ?? 'Any'}</div>
+              <button type="button" aria-label={`${t.completed ? 'Mark not done' : 'Complete'}: ${t.title}`} aria-pressed={t.completed} onClick={() => data.toggleTask(t.id)} style={{ lineHeight: 0 }}>
+                <Check done={t.completed} />
+              </button>
+              <Link to={`/tasks/${t.id}`} style={{ flex: 1, color: 'inherit' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, textDecoration: t.completed ? 'line-through' : undefined }}>{t.title}</div>
+                {(t.endTime || t.deadline || t.notes) && <div className="meta">{[t.endTime ? timeRange(t) : '', t.deadline ? 'Deadline' : '', t.notes ?? ''].filter(Boolean).join(' · ')}</div>}
+              </Link>
+              <div style={{ width: 3, height: 28, borderRadius: 2, background: t.deadline ? 'var(--clay)' : t.priority === 'high' ? 'var(--gold)' : 'transparent' }} />
             </div>
           ))}
         </div>
+        <div style={{ marginTop: 14 }}><QuickAdd date={selected} /></div>
       </div>
     </main>
   )

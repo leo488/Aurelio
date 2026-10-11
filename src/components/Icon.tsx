@@ -1,4 +1,4 @@
-export type IconName = 'sun' | 'moon' | 'dumbbell' | 'book' | 'calendar' | 'list' | 'bell' | 'together' | 'plus' | 'gear'
+export type IconName = 'sun' | 'moon' | 'dumbbell' | 'book' | 'calendar' | 'list' | 'bell' | 'together' | 'plus' | 'gear' | 'flame'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   sun: (
@@ -43,6 +43,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  // Same silhouette as the 24px ember, as a line icon for the Progress tab.
+  flame: <path d="M12 3.4c3.2 3.4 5.6 6 5.6 9.2A5.6 5.6 0 0 1 12 18.2a5.6 5.6 0 0 1-5.6-5.6c0-3.2 2.4-5.8 5.6-9.2Z" />,
   gear: (
     <>
       <circle cx="12" cy="12" r="3.2" />
@@ -51,7 +53,7 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
 }
 
-export function Icon({ name, size = 24, color = '#1A1714', stroke = 1.8, style }: { name: IconName; size?: number; color?: string; stroke?: number; style?: React.CSSProperties }) {
+export function Icon({ name, size = 24, color = 'var(--ink)', stroke = 1.8, style }: { name: IconName; size?: number; color?: string; stroke?: number; style?: React.CSSProperties }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ flex: '0 0 auto', ...style }} aria-hidden="true">
       {PATHS[name]}
@@ -60,4 +62,4 @@ export function Icon({ name, size = 24, color = '#1A1714', stroke = 1.8, style }
 }
 
 /** The colour each routine icon wears in lists (sun gold, moon iris, gym olive, study muted). */
-export const ROUTINE_TINT: Record<string, string> = { sun: '#C79A4A', moon: '#8A7E9B', dumbbell: '#6E7F63', book: '#8E857B' }
+export const ROUTINE_TINT: Record<string, string> = { sun: 'var(--gold)', moon: 'var(--iris)', dumbbell: 'var(--olive)', book: 'var(--muted-2)' }

@@ -1,10 +1,16 @@
 import { useEffect } from 'react'
-import { displayName } from '../data/session'
-import { dayProgress, myTasks, routinesOn } from '../data/select'
+import { completionFor, dayProgress, routinesOn, routineTime } from '../data/select'
 import { useData } from '../data/store'
-import type { NoticeKind, User } from '../data/types'
-import { addDays, logicalToday, minutesOf, nowMinutes, timeOf } from './date'
-import { itemsOn } from './streak'
+import type { AppNotification, User } from '../data/types'
+import { addDays, logicalToday, minutesOf, nowMinutes, toDate } from './date'
+import { progress, stepsOn } from './streak'
+
+// Reminders are worked out from the records themselves (a routine's reminder settings, a task's
+// reminder time), so editing or deleting the record is all it takes to change them. When one is
+// due it is written to the notifications collection, then shown with the Notifications API if the
+// browser has it and permission was given. Without that, the in-app inbox still has it.
+
+export const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
 
 const inQuiet = (mins: number, from: string, to: string) => {
   const a = minutesOf(from)
@@ -12,8 +18,8 @@ const inQuiet = (mins: number, from: string, to: string) => {
   return a <= b ? mins >= a && mins < b : mins >= a || mins < b
 }
 
-async function show(title: string, body: string, tag: string) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return
+async function show(title: string, body: string | undefined, tag: string) {
+  if (!notificationsSupported() || Notification.permission !== 'granted') return
   try {
     const reg = await navigator.serviceWorker?.getRegistration()
     if (reg) await reg.showNotification(title, { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' })
@@ -23,66 +29,86 @@ async function show(title: string, body: string, tag: string) {
   }
 }
 
-/**
- * While the app is open (or kept alive by the OS), check once a minute for routine starts,
- * deadline warnings and the evening catch-up. Each one is sent once, logged to the inbox,
- * and held back during quiet hours (deadline warnings wait for the morning instead).
- */
 export function checkReminders(user: User, now = new Date()) {
   const s = useData.getState()
-  const settings = s.settings[user]
+  const settings = s.settings
+  if (!settings || s.me?.id !== user.id) return
   const today = logicalToday(now)
   const mins = nowMinutes(now)
   const quiet = settings.notif.quiet.on && inQuiet(mins, settings.notif.quiet.from, settings.notif.quiet.to)
+
+  const fire = (key: string, n: Omit<AppNotification, 'id' | 'userId' | 'status' | 'createdAt' | 'scheduledFor'>) => {
+    const id = `${user.id}|${key}`
+    const st = useData.getState()
+    if (st.sent[id] || st.notifications.some((x) => x.id === id)) return
+    st.markSent(id)
+    st.notify({ ...n, id })
+    void show(n.title, n.body, id)
+  }
+
+  // Nudges and encouragement the other person sent, once their time comes.
+  for (const n of s.notifications) {
+    if (n.status !== 'scheduled' || new Date(n.scheduledFor) > now) continue
+    s.setNotificationStatus(n.id, 'sent')
+    if (settings.notif.partner && !quiet) void show(n.title, n.body, `${n.id}|partner`)
+  }
+
   if (quiet) return
 
-  const send = (key: string, kind: NoticeKind, title: string, meta: string, body: string, taskId?: string) => {
-    const k = `${user}|${key}`
-    if (useData.getState().sent[k]) return
-    useData.getState().markSent(k)
-    useData.getState().pushNotice(user, { kind, title, meta, taskId })
-    void show(title, body, k)
-  }
-
-  if (settings.notif.routineStart) {
-    for (const r of routinesOn(s, user, today)) {
-      if (!r.remind || r.owner !== user) continue
-      const start = minutesOf(r.time)
-      if (mins >= start - 10 && mins < start) {
-        send(`routine|${r.id}|${today}`, 'routine', `${r.name} starts in ${start - mins} minutes`, 'Routine reminder', itemsOn(r, today).map((i) => i.name).join(', '))
-      }
-    }
-  }
-
-  if (settings.notif.deadlines) {
-    for (const t of myTasks(s, user)) {
-      if (t.done || !t.due) continue
-      const due = t.due.slice(0, 10)
-      if (t.isDeadline) {
-        // Two days out, then the morning of, both at 9:00 (or the first non-quiet minute after).
-        for (const [d, label] of [[addDays(due, -2), 'is due in two days'], [due, 'is due tonight']] as const) {
-          if (d === today && mins >= 9 * 60) send(`deadline|${t.id}|${d}`, 'deadline', `${t.title} ${label}`, 'Deadline warning', `Due ${timeOf(t.due) ?? 'today'}`, t.id)
+  if (user.role === 'leo') {
+    if (settings.notif.reminders) {
+      for (const r of routinesOn(s, today)) {
+        if (!r.reminder.enabled || !r.scheduledTime) continue
+        const start = minutesOf(routineTime(r))
+        const p = progress(r, today, completionFor(s, r, today))
+        if (p.done === p.total) continue
+        if (mins >= start - r.reminder.minutesBefore && mins < start) {
+          const left = start - mins
+          fire(`routine|${r.id}|${today}`, {
+            kind: 'routine', title: `${r.name} starts in ${left} minute${left === 1 ? '' : 's'}`,
+            body: stepsOn(r, today).map((x) => x.title).join(', '), refType: 'routine', refId: r.id,
+          })
         }
       }
-      if (t.remindAt && t.remindAt.slice(0, 10) === today && mins >= minutesOf(timeOf(t.remindAt) ?? '09:00')) {
-        send(`remind|${t.id}|${t.remindAt}`, 'deadline', t.title, 'Reminder', t.notes ?? 'Tap to open your tasks', t.id)
-      }
+    }
+    // Evening catch-up when routines are still open.
+    const day = dayProgress(s, today)
+    const left = day.total - day.done
+    if (settings.notif.reminders && mins >= 20 * 60 && left > 0) {
+      fire(`catchup|${today}`, { kind: 'catchup', title: `${left} routine${left === 1 ? '' : 's'} left today`, body: `${user.name}, there’s still time.` })
     }
   }
 
-  // Evening catch-up at 20:00 when routine items are still open.
-  const p = dayProgress(s, user, today)
-  const left = p.total - p.done
-  if (mins >= 20 * 60 && left > 0 && left <= 6) {
-    send(`catchup|${today}`, 'catchup', `${left} item${left === 1 ? '' : 's'} left before bed`, 'Catch-up', `${displayName[user]}, there’s still time.`)
+  // Task reminders and deadline warnings (anyone with tasks; in practice Sonia).
+  for (const t of s.tasks) {
+    if (t.completed) continue
+    if (settings.notif.reminders && t.reminderAt && t.reminderAt.slice(0, 10) <= today && toDate(t.reminderAt) <= now && t.reminderAt.slice(0, 10) >= addDays(today, -1)) {
+      fire(`task|${t.id}|${t.reminderAt}`, {
+        kind: 'task', title: t.startTime && t.date === today ? `${t.title} at ${t.startTime}` : t.title,
+        body: t.notes ?? 'Tap to open your day', refType: 'task', refId: t.id,
+      })
+    }
+    if (settings.notif.deadlines && t.deadline && t.date && mins >= 9 * 60) {
+      for (const [d, label] of [[addDays(t.date, -2), 'is due in two days'], [t.date, 'is due today']] as const) {
+        if (d === today) fire(`deadline|${t.id}|${d}`, { kind: 'deadline', title: `${t.title} ${label}`, refType: 'task', refId: t.id })
+      }
+    }
   }
 }
 
 export function useReminders(user: User | null) {
   useEffect(() => {
     if (!user) return
+    const tick = () => {
+      void useData.getState().refreshShared().then(() => checkReminders(user))
+    }
     checkReminders(user)
-    const t = setInterval(() => checkReminders(user), 60000)
-    return () => clearInterval(t)
+    const t = setInterval(tick, 60000)
+    const onVisible = () => document.visibilityState === 'visible' && tick()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [user])
 }

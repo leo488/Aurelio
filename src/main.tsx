@@ -9,11 +9,14 @@ import '@fontsource/plus-jakarta-sans/800.css'
 import './styles/tokens.css'
 import './index.css'
 import App from './App.tsx'
+import { boot } from './boot'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
+void boot().finally(() =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  ),
 )
