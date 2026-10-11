@@ -85,7 +85,7 @@ Settings → Reset demo data puts the demo back.
 ## Deploy and install
 
 Install and offline only work over HTTPS (or localhost). `.github/workflows/pages.yml` builds the app on every push to
-`claude/design-v2-llqmbc` and publishes it to the `gh-pages` branch, served at `https://leo488.github.io/aurelio/`.
+`claude/design-v2-llqmbc` and publishes it to the `gh-pages` branch, served at `https://leo488.github.io/Aurelio/`.
 In the repository's Settings → Pages, set the source to "Deploy from a branch", `gh-pages`, `/ (root)` once.
 On Android, open that link in Chrome and tap Install app (or ⋮ → Add to Home screen).
 
