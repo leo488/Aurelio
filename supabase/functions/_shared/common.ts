@@ -17,7 +17,7 @@ export const json = (body: unknown, status = 200) =>
 export const admin = (): SupabaseClient => createClient(URL_, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } })
 
 /** The same access the app has, for the provider's sign-in calls. */
-export const publicClient = (): SupabaseClient => createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } })
+export const publicClient = (): SupabaseClient => createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false, flowType: 'implicit' } })
 
 export type Role = 'leo' | 'sonia'
 export const isRole = (r: unknown): r is Role => r === 'leo' || r === 'sonia'

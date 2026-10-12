@@ -40,8 +40,10 @@ export interface AuthService {
   current(): Promise<Session | null>
   /** Whether this device has a PIN for the profile (decides "Enter PIN" vs first-time setup). */
   hasPin(role: Role): boolean
-  /** Send a one-time code to the profile's email. */
-  sendCode(role: Role): Promise<void>
+  /** Send a one-time code to the profile's email. 'link' means the email carries a sign-in link instead. */
+  sendCode(role: Role): Promise<'code' | 'link' | void>
+  /** The profile confirmed by opening the email's sign-in link, when the app was opened that way. */
+  fromEmailLink?(): Promise<Role | null>
   /** Check the emailed code. After this, setPin finishes setup. */
   verifyCode(role: Role, code: string): Promise<void>
   /** Create or replace the PIN once the email is verified. */

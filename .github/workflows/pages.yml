@@ -24,12 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ready: ${{ steps.check.outputs.ready }}
-      anon_key: ${{ steps.setup.outputs.anon_key }}
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       LEO_EMAIL: ${{ secrets.LEO_EMAIL }}
       SONIYA_EMAIL: ${{ secrets.SONIYA_EMAIL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
     steps:
       - id: check
         run: |
@@ -79,17 +80,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Public key
+        if: needs.backend.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/supabase-anon.mjs
       - name: Build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
           READY: ${{ needs.backend.outputs.ready }}
-          ANON: ${{ needs.backend.outputs.anon_key }}
           LEO_EMAIL: ${{ secrets.LEO_EMAIL }}
           SONIYA_EMAIL: ${{ secrets.SONIYA_EMAIL }}
         run: |
           if [ "$READY" = "true" ]; then
             export VITE_SUPABASE_URL="https://$SUPABASE_PROJECT_REF.supabase.co"
-            export VITE_SUPABASE_ANON_KEY="$ANON"
             # Only a masked hint ships in the public app ("l••••@gmail.com"); sign-in looks the address up on the server.
             hint() { node -e 'const [n,d]=process.argv[1].split("@");console.log(n[0]+"•".repeat(Math.max(2,n.length-1))+"@"+d)' "$1"; }
             export VITE_LEO_EMAIL="$(hint "$LEO_EMAIL")"

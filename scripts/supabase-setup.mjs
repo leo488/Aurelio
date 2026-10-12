@@ -47,7 +47,6 @@ const anon = pick('anon') ?? keys.find((k) => k.type === 'publishable')?.api_key
 const service = pick('service_role') ?? keys.find((k) => k.type === 'secret')?.api_key
 if (!anon || !service) throw new Error('Could not read the project API keys')
 mask(service)
-if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `anon_key=${anon}\n`)
 if (process.env.GITHUB_ENV) appendFileSync(process.env.GITHUB_ENV, `SUPABASE_SERVICE_KEY=${service}\nSUPABASE_ANON_KEY=${anon}\n`)
 console.log('  ok')
 
@@ -71,16 +70,30 @@ for (const [role, email] of Object.entries(EMAILS)) {
 }
 
 step('Sign-in settings')
-await api('PATCH', `/projects/${REF}/config/auth`, {
-  disable_signup: true,
-  site_url: SITE,
-  uri_allow_list: SITE,
-  mailer_otp_exp: 900,
+const base = { disable_signup: true, site_url: SITE, uri_allow_list: `${SITE}**`, mailer_otp_exp: 900 }
+const template = {
   mailer_subjects_magic_link: 'Your Aurelio sign-in code',
   mailer_templates_magic_link_content:
-    '<h2>Your Aurelio code</h2><p style="font-size:28px;letter-spacing:6px;font-weight:bold">{{ .Token }}</p><p>Type it into the app. It works for 15 minutes.</p>',
-})
-console.log('  ok')
+    '<h2>Your Aurelio code</h2><p style="font-size:28px;letter-spacing:6px;font-weight:bold">{{ .Token }}</p><p>Type it into the app. It works for 15 minutes.</p><p>Or <a href="{{ .ConfirmationURL }}">tap here to sign in</a> on this phone.</p>',
+}
+// Optional: a Gmail address and app password send the email from Gmail, which lets it carry the
+// code and reach both people. Without it, Supabase's own sender sends its default sign-in link.
+const SMTP_USER = process.env.SMTP_USER
+const SMTP_PASS = process.env.SMTP_PASS
+const smtp = SMTP_USER && SMTP_PASS
+  ? { smtp_host: 'smtp.gmail.com', smtp_port: '465', smtp_user: SMTP_USER, smtp_pass: SMTP_PASS, smtp_admin_email: SMTP_USER, smtp_sender_name: 'Aurelio' }
+  : {}
+if (SMTP_PASS) mask(SMTP_PASS)
+let emailMode = 'code'
+try {
+  await api('PATCH', `/projects/${REF}/config/auth`, { ...base, ...smtp, ...template })
+} catch (e) {
+  if (!/template/i.test(String(e))) throw e
+  await api('PATCH', `/projects/${REF}/config/auth`, base)
+  emailMode = 'link'
+}
+await sql(`insert into public.server_config (key, value) values ('email_mode', ${lit(emailMode)}) on conflict (key) do update set value = excluded.value`)
+console.log(`  ok (${SMTP_USER ? 'Gmail sender' : 'Supabase sender'}; email carries a ${emailMode})`)
 
 step('Server secrets')
 const have = new Set((await api('GET', `/projects/${REF}/secrets`)).map((s) => s.name))

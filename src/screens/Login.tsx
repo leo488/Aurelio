@@ -37,6 +37,12 @@ export function Login() {
     if (session) navigate('/today', { replace: true })
   }, [session, navigate])
 
+  // Opened from the email's sign-in link: the email is confirmed, so go straight to making a PIN.
+  const [linkError, setLinkError] = useState('')
+  useEffect(() => {
+    auth.fromEmailLink?.().then((r) => r && setStep({ name: 'create', role: r }), (e: unknown) => setLinkError(e instanceof Error ? e.message : ''))
+  }, [auth])
+
   const finish = (s: Session) => {
     lastProfile.set(s.user.role)
     void useData.getState().load(s.user)
@@ -52,6 +58,7 @@ export function Login() {
           <AppMark size={30} />
           <h1 className="display" style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-.035em', lineHeight: 1.05, margin: '22px 0 0' }}>Who are you?</h1>
         </div>
+        {linkError && <div style={{ padding: '18px 32px 0', fontSize: 13, fontWeight: 700, color: 'var(--clay)' }} role="alert">{linkError}</div>}
         <div style={{ display: 'flex', gap: 22, padding: '64px 32px 0', justifyContent: 'center' }}>
           {ROLES.map((r) => (
             <button key={r} type="button" className="profile-pick" onClick={() => pick(r)} style={{ flex: 1, textAlign: 'center', transition: 'transform .2s' }}>
@@ -180,6 +187,7 @@ function Verify({ role, reset, onVerified, onHavePin }: { role: Role; reset: boo
   const auth = getAuth()
   const email = PROFILES[role].email
   const [sent, setSent] = useState(false)
+  const [viaLink, setViaLink] = useState(false)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -201,9 +209,11 @@ function Verify({ role, reset, onVerified, onHavePin }: { role: Role; reset: boo
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, alignSelf: 'stretch', padding: '0 32px calc(40px + var(--safe-bottom))' }}>
       <h1 className="display" style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.03em', margin: '18px 0 0' }}>{reset ? 'Reset your PIN' : `Hi ${PROFILES[role].name}`}</h1>
       <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 7, textAlign: 'center', lineHeight: 1.5, maxWidth: 270 }}>
-        {sent ? `Enter the 6-digit code sent to ${maskEmail(email)}.` : `First, a quick check that it’s you. We’ll email a code to ${maskEmail(email)}.`}
+        {sent && viaLink
+          ? `We sent a sign-in link to ${maskEmail(email)}. Open the email on this phone and tap the link.`
+          : sent ? `Enter the 6-digit code sent to ${maskEmail(email)}.` : `First, a quick check that it’s you. We’ll email a code to ${maskEmail(email)}.`}
       </div>
-      {sent && (
+      {sent && !viaLink && (
         <div style={{ marginTop: 30, alignSelf: 'stretch' }}>
           <input className="text-input display" autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} aria-label="Code from the email"
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••"
@@ -217,15 +227,15 @@ function Verify({ role, reset, onVerified, onHavePin }: { role: Role; reset: boo
       <div style={{ marginTop: 'auto', alignSelf: 'stretch', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {sent ? (
           <>
-            <button type="button" className="btn btn-ink" disabled={busy || code.length !== 6} style={{ opacity: code.length === 6 ? 1 : 0.5 }} onClick={verify}>Verify</button>
+            {!viaLink && <button type="button" className="btn btn-ink" disabled={busy || code.length !== 6} style={{ opacity: code.length === 6 ? 1 : 0.5 }} onClick={verify}>Verify</button>}
             <button type="button" style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-text)', padding: 10 }} disabled={busy}
-              onClick={() => void run(async () => { await auth.sendCode(role); setCode('') })}>
-              Send a new code
+              onClick={() => void run(async () => { setViaLink((await auth.sendCode(role)) === 'link'); setCode('') })}>
+              {viaLink ? 'Send a new link' : 'Send a new code'}
             </button>
           </>
         ) : (
           <>
-            <button type="button" className="btn btn-ink" disabled={busy} onClick={() => void run(async () => { await auth.sendCode(role); setSent(true) })}>
+            <button type="button" className="btn btn-ink" disabled={busy} onClick={() => void run(async () => { setViaLink((await auth.sendCode(role)) === 'link'); setSent(true) })}>
               {busy ? 'Sending…' : 'Email me a code'}
             </button>
             {!reset && backendKind() !== 'local' && (

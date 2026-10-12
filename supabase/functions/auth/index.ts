@@ -1,6 +1,6 @@
 // Sign-in for the two members, by profile rather than by email, so the addresses never ship in
 // the public app. Actions:
-//   send    { role }        → emails a 6-digit code
+//   send    { role }        → emails a 6-digit code (or, on Supabase's own sender, a sign-in link)
 //   verify  { role, code }  → checks the code and returns a session
 //   setpin  { pin }         → (signed in) sets the PIN as the account's password
 //   pin     { role, pin }   → signs in with the PIN; five wrong tries lock the profile for 15 minutes
@@ -50,7 +50,8 @@ Deno.serve(async (req) => {
   if (action === 'send') {
     const { error } = await publicClient().auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
     if (error) return json({ error: error.status === 429 ? 'rate-limited' : 'unknown', message: error.message }, error.status === 429 ? 429 : 500)
-    return json({ ok: true })
+    const { data } = await admin().from('server_config').select('value').eq('key', 'email_mode').maybeSingle()
+    return json({ ok: true, mode: data?.value === 'link' ? 'link' : 'code' })
   }
 
   if (action === 'verify') {

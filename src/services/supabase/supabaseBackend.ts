@@ -84,7 +84,7 @@ export const getSupabase = () => client
 /** Calls the auth function and turns its error codes into the app's AuthErrors. */
 async function callAuth(sb: SupabaseClient, body: Record<string, unknown>) {
   const { data, error } = await sb.functions.invoke('auth', { body })
-  if (!error) return data as { session?: { access_token: string; refresh_token: string } }
+  if (!error) return data as { session?: { access_token: string; refresh_token: string }; mode?: 'code' | 'link' }
   const ctx = (error as { context?: Response }).context
   let code = ''
   let left: number | undefined
@@ -106,8 +106,11 @@ async function callAuth(sb: SupabaseClient, body: Record<string, unknown>) {
 }
 
 export function createSupabaseServices(): { backend: Backend; auth: AuthService } {
+  // Opened from the sign-in link in the email: the client picks the session up from the URL.
+  const fromLink = /[#&](access_token|error_code)=/.test(window.location.hash)
+  const linkError = /error_code=otp_expired/.test(window.location.hash) ? 'That link has expired. Send a new one.' : /error_code=/.test(window.location.hash) ? 'That link didn’t work. Send a new one.' : null
   const sb = createClient(SUPABASE.url, SUPABASE.anonKey, {
-    auth: { persistSession: true, autoRefreshToken: true, storageKey: 'aurelio:supabase-auth' },
+    auth: { persistSession: true, autoRefreshToken: true, storageKey: 'aurelio:supabase-auth', flowType: 'implicit', detectSessionInUrl: true },
   })
   client = sb
 
@@ -162,7 +165,16 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
 
     async sendCode(role) {
       // The server looks up the address for this profile; nobody new can sign up.
-      await callAuth(sb, { action: 'send', role })
+      const res = await callAuth(sb, { action: 'send', role })
+      return res.mode ?? 'code'
+    },
+
+    async fromEmailLink() {
+      if (!fromLink) return null
+      if (linkError) throw new AuthError(linkError, 'wrong-code')
+      const { data } = await sb.auth.getSession()
+      if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search)
+      return roleFor(data.session?.user)
     },
 
     async verifyCode(role, code) {
