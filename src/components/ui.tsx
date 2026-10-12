@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useMe } from '../data/session'
 import { useData } from '../data/store'
 import type { Priority, Routine, Task, TimeCategory } from '../data/types'
-import { addDays, dt, hhmm, logicalToday, minutesOf, MONTHS, weekday, WEEKDAY_LONG, WEEKDAY_SHORT } from '../lib/date'
+import { addDays, dt, hhmm, isoWeek, logicalToday, minutesOf, MONTHS, weekday, WEEKDAY_LONG, WEEKDAY_SHORT } from '../lib/date'
 import { Avatar } from './Avatar'
 import { Check, Chip, Toggle } from './controls'
+import { Ember } from './Ember'
 import { Icon, type IconName } from './Icon'
 import { Ori } from './Ori'
 import { Sheet } from './Sheet'
@@ -25,6 +26,32 @@ export function Ring({ pct, size = 76, r = 34, width = 6, glow = true, children 
           style={{ transition: 'stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)', filter: glow ? 'var(--glow-ring)' : undefined }} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>{children}</div>
+    </div>
+  )
+}
+
+const StatCard = ({ to, visual, value, caption }: { to?: string; visual: React.ReactNode; value: React.ReactNode; caption: string }) => {
+  const body = (
+    <>
+      <div style={{ height: 40, display: 'flex', alignItems: 'center' }}>{visual}</div>
+      <div className="display" style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1, marginTop: 12 }}>{value}</div>
+      <div style={{ fontSize: 11.5, color: 'var(--muted-2)', fontWeight: 700, marginTop: 5 }}>{caption}</div>
+    </>
+  )
+  const style: React.CSSProperties = { padding: '15px 13px 14px', minWidth: 0, color: 'inherit', display: 'block' }
+  return to ? <Link to={to} className="card" style={style}>{body}</Link> : <div className="card" style={style}>{body}</div>
+}
+
+/** The three cards at the top of each Today: today's progress, the streak, and the week of the year. */
+export function StatCards({ done, total, unit, streak, streakCaption, streakTo, today }: { done: number; total: number; unit: string; streak: number; streakCaption: string; streakTo: string; today: string }) {
+  const wk = isoWeek(today)
+  return (
+    <div className="pad" style={{ paddingTop: 22, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 9 }}>
+      <StatCard visual={<Ring pct={total ? (done / total) * 100 : 0} size={40} r={16} width={4.5} />}
+        value={<>{done}<span style={{ fontSize: 15, color: 'var(--muted-2)' }}>/{total}</span></>} caption={`${unit} done`} />
+      <StatCard to={streakTo} visual={<Ember streak={streak} size={36} />} value={streak} caption={streakCaption} />
+      <StatCard visual={<Ring pct={(wk.week / wk.of) * 100} size={40} r={16} width={4.5} glow={false} />}
+        value={<><span style={{ fontSize: 13, color: 'var(--muted-2)', marginRight: 3 }}>Wk</span>{wk.week}</>} caption={`of ${wk.of} · ${wk.year}`} />
     </div>
   )
 }
@@ -281,7 +308,7 @@ export function PartnerStrip({ onRemind }: { onRemind: () => void }) {
 }
 
 const PRESETS = {
-  // What Leo sends Sonia, and what Sonia sends Leo.
+  // What Leo sends Soniya, and what Soniya sends Leo.
   sonia: ['Don’t forget your next appointment', 'Call your mum tonight', 'Drink some water', 'Take a proper break'],
   leo: ['Don’t skip your evening routine', 'Time for your workout', 'Drink some water', 'Lights out by 23:00 tonight'],
 }

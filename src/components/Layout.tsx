@@ -62,11 +62,20 @@ export function Layout() {
 
   const dark = DARK.includes(pathname)
   useEffect(() => {
-    // The status bar takes the colour of the screen under it, read from the theme tokens.
-    const token = getComputedStyle(document.documentElement).getPropertyValue(dark ? '--ink-dark-bg' : '--paper').trim()
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', token)
+    // The status bar takes the colour at the top of the screen under it, so the app runs edge to edge.
+    const css = getComputedStyle(document.documentElement)
+    const paint = () => {
+      const bg = document.querySelector<HTMLElement>('main.screen')?.style.background ?? ''
+      const m = bg.match(/--(wash|hero)-([a-z]+)/)
+      const token = dark ? '--ink-dark-bg' : m ? (m[1] === 'wash' ? `--bar-${m[2]}` : `--hero-${m[2]}`) : '--paper'
+      const color = css.getPropertyValue(token).trim() || css.getPropertyValue('--paper').trim()
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+    }
+    paint()
+    const raf = requestAnimationFrame(paint)
     document.documentElement.style.background = dark ? 'var(--ink-dark-bg)' : ''
-  }, [dark])
+    return () => cancelAnimationFrame(raf)
+  }, [dark, pathname])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -97,7 +106,7 @@ export function Layout() {
   )
 }
 
-/** Keeps each experience to its owner: Sonia never lands on Leo's routine screens and vice versa. */
+/** Keeps each experience to its owner: Soniya never lands on Leo's routine screens and vice versa. */
 export function Only({ role, children }: { role: Role; children: React.ReactNode }) {
   const me = useData((s) => s.me)
   if (me && me.role !== role) return <Navigate to="/today" replace />

@@ -6,7 +6,7 @@ import { Ember } from '../components/Ember'
 import { Icon } from '../components/Icon'
 import { InstallHint } from '../components/InstallHint'
 import { flash } from '../components/Toast'
-import { catLook, headerDate, Label, PartnerStrip, RemindSheet, Ring, StepRow } from '../components/ui'
+import { catLook, headerDate, Label, PartnerStrip, RemindSheet, StatCards, StepRow } from '../components/ui'
 import { useMe } from '../data/session'
 import { completionFor, dayProgress, nowRoutine, routineTime } from '../data/select'
 import { useData } from '../data/store'
@@ -14,7 +14,6 @@ import type { Routine, TimeCategory } from '../data/types'
 import { logicalToday } from '../lib/date'
 import { greeting } from '../lib/greeting'
 import { dayStreak, MILESTONES, progress, stepsOn } from '../lib/streak'
-import { useCountUp } from '../lib/useCountUp'
 
 const GROUPS: [TimeCategory, string][] = [['morning', 'Morning'], ['afternoon', 'Afternoon'], ['evening', 'Evening'], ['night', 'Night'], ['custom', 'Custom']]
 
@@ -29,7 +28,6 @@ export function Today() {
 
   const day = dayProgress(data, today)
   const streak = dayStreak(data.routines, data.completions, today)
-  const ring = useCountUp(day.total ? Math.round((day.done / day.total) * 100) : 0)
 
   if (data.routines.length === 0) return <Navigate to="/welcome" replace />
 
@@ -86,20 +84,8 @@ export function Today() {
 
       <InstallHint />
 
-      <div className="pad" style={{ paddingTop: 24, display: 'flex', alignItems: 'center', gap: 18 }}>
-        <Ring pct={ring}>
-          <div className="display" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-.03em' }}>{day.done}/{day.total}</div>
-        </Ring>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.01em' }}>{day.done} of {day.total} routines done</div>
-          <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 3 }}>{sub}</div>
-          <Link to="/streak" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, color: 'inherit' }}>
-            <Ember streak={streak.current} size={19} />
-            <div className="display" style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-.03em' }}>{streak.current}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--muted-2)', fontWeight: 600 }}>day streak</div>
-          </Link>
-        </div>
-      </div>
+      <StatCards done={day.done} total={day.total} unit="Routines" streak={streak.current} streakCaption="Day streak" streakTo="/streak" today={today} />
+      {sub && !next && <div className="pad" style={{ paddingTop: 12, fontSize: 13.5, color: 'var(--muted-1)' }}>{sub}</div>}
 
       {next && look && (
         <div className="pad" style={{ paddingTop: 26 }}>

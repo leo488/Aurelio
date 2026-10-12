@@ -5,7 +5,7 @@ import { tasksOn } from '../data/select'
 import { useData } from '../data/store'
 import { fromISO, logicalToday, monthDay, MONTHS, toISO, weekday } from '../lib/date'
 
-/** Sonia's month: pick a day and its plan is right underneath to tick, open or add to. */
+/** Soniya's month: pick a day and its plan is right underneath to tick, open or add to. */
 export function Calendar() {
   const data = useData()
   const navigate = useNavigate()

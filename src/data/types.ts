@@ -92,7 +92,7 @@ export interface RoutineCompletion {
   updatedAt: string
 }
 
-// ─── Sonia: tasks and calendar ───────────────────────────────────────────────
+// ─── Soniya: tasks and calendar ───────────────────────────────────────────────
 
 export type Priority = 'low' | 'medium' | 'high'
 
@@ -123,11 +123,11 @@ export interface Settings {
   id: string
   userId: string
   notif: {
-    /** Routine start reminders (Leo) or task reminders (Sonia). */
+    /** Routine start reminders (Leo) or task reminders (Soniya). */
     reminders: boolean
-    /** Deadline and overdue warnings (Sonia); the 20:00 streak-at-risk check (Leo). */
+    /** Deadline and overdue warnings (Soniya); the 20:00 streak-at-risk check (Leo). */
     deadlines: boolean
-    /** Sonia's 08:00 summary of the day. Missing means on. */
+    /** Soniya's 08:00 summary of the day. Missing means on. */
     summary?: boolean
     partner: boolean
     quiet: { on: boolean; from: string; to: string }

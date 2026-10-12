@@ -1,6 +1,6 @@
 # Aurelio
 
-A private PWA for two people. **Leo** gets routines, steps, streaks and stats. **Sonia** gets a daily planner with
+A private PWA for two people. **Leo** gets routines, steps, streaks and stats. **Soniya** gets a daily planner with
 tasks, reminders and a calendar. A light shared layer lets each see the other's progress numbers, send encouragement
 and set reminders for each other. Built from `design_handoff_aurelio_pwa/`, reskinned with `design_handoff_aurelio_dark_skin/` (dark is the default look).
 
@@ -31,7 +31,7 @@ screens ─▶ useData (src/data/store.ts) ─▶ services (src/services/index.t
   full day +1, ≥60% holds, <60% resets, skipped/unscheduled/inactive days are neutral, the day ends at 4am.
   Each completion stores the steps that were required that day, and schedule changes are kept as history,
   so editing a routine never rewrites past streaks.
-- `src/lib/stats.ts` Leo's and Sonia's profile numbers, including Sonia's planning streak (days with ≥60% of the plan done).
+- `src/lib/stats.ts` Leo's and Soniya's profile numbers, including Soniya's planning streak (days with ≥60% of the plan done).
 - `src/lib/routineDraft.ts` AI routine creation: structured JSON, validated, reviewed in the New Routine form, saved only on Save.
 - `src/lib/reminders.ts` reminders derived from routines and tasks, plus nudges between the two people.
 

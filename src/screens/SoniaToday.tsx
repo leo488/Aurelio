@@ -5,15 +5,15 @@ import { Icon } from '../components/Icon'
 import { InstallHint } from '../components/InstallHint'
 import { parseQuickTask } from '../components/tasks'
 import { flash } from '../components/Toast'
-import { headerDate, Label, PartnerStrip, RemindSheet, Ring, shortDay, TaskSheet, TaskTimeRow } from '../components/ui'
+import { headerDate, Label, PartnerStrip, RemindSheet, shortDay, StatCards, TaskSheet, TaskTimeRow } from '../components/ui'
 import { useMe } from '../data/session'
 import { overdueTasks, tasksOn } from '../data/select'
 import { useData } from '../data/store'
 import { addDays, hhmm, logicalToday, looseTime, nowMinutes } from '../lib/date'
 import { greeting } from '../lib/greeting'
-import { useCountUp } from '../lib/useCountUp'
+import { soniaStats } from '../lib/stats'
 
-/** Sonia's home: what's on today, how far through it she is, and adding a task in place. */
+/** Soniya's home: what's on today, how far through it she is, and adding a task in place. */
 export function SoniaToday() {
   const data = useData()
   const { me, name } = useMe()
@@ -25,7 +25,7 @@ export function SoniaToday() {
   const now = new Date()
   const list = tasksOn(data, today)
   const done = list.filter((t) => t.completed).length
-  const ring = useCountUp(list.length ? Math.round((done / list.length) * 100) : 0)
+  const planning = soniaStats(data, today).streak
   const overdue = overdueTasks(data, today)
   const clock = hhmm(nowMinutes(now))
   const next = list.find((t) => !t.completed && t.startTime && t.startTime >= clock) ?? list.find((t) => !t.completed)
@@ -54,18 +54,10 @@ export function SoniaToday() {
 
       <InstallHint />
 
-      <div className="pad" style={{ paddingTop: 24, display: 'flex', alignItems: 'center', gap: 18 }}>
-        <Ring pct={ring}>
-          <div className="display" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-.03em' }}>{done}/{list.length}</div>
-        </Ring>
-        <div style={{ flex: 1 }}>
-          <div className="display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.025em' }}>{list.length} {list.length === 1 ? 'task' : 'tasks'} today</div>
-          <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 3 }}>{done} completed · {list.length - done} remaining</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 9, color: 'var(--gold-text)' }}>
-            <Icon name="clock" size={15} stroke={1.7} color="var(--gold-text)" />
-            <div style={{ fontSize: 12.5, fontWeight: 800 }}>{next ? `Next: ${next.title}${next.startTime ? ` at ${next.startTime}` : ''}` : 'Nothing left today'}</div>
-          </div>
-        </div>
+      <StatCards done={done} total={list.length} unit="Tasks" streak={planning} streakCaption="Plan streak" streakTo="/profile" today={today} />
+      <div className="pad" style={{ paddingTop: 14, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-text)' }}>
+        <Icon name="clock" size={15} stroke={1.7} color="var(--gold-text)" />
+        <div style={{ fontSize: 12.5, fontWeight: 800 }}>{next ? `Next: ${next.title}${next.startTime ? ` at ${next.startTime}` : ''}` : list.length ? 'Nothing left today' : 'Nothing planned today'}</div>
       </div>
 
       {overdue.length > 0 && (

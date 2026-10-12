@@ -122,6 +122,15 @@
   --glow-avatar: drop-shadow(0 10px 30px rgba(199, 154, 74, .25));
 
   /* Header auras */
+  /* Status-bar colours: what each wash looks like just under the phone's status bar. */
+  --bar-default: #202023;
+  --bar-streak: #272524;
+  --bar-login: #2d271c;
+  --bar-pin: #26221a;
+  --bar-settings: #171716;
+  --bar-together: var(--bar-settings);
+  --bar-empty: var(--bar-settings);
+  --bar-missed: #1c1719;
   --wash-default: radial-gradient(110% 38% at 92% -6%, rgba(199, 154, 74, .20) 0%, rgba(199, 154, 74, 0) 62%), linear-gradient(180deg, #151820 0%, #0e1013 42%);
   --wash-streak: radial-gradient(110% 38% at 20% -6%, rgba(199, 154, 74, .22) 0%, rgba(199, 154, 74, 0) 62%), linear-gradient(180deg, #151820 0%, #0e1013 42%);
   --wash-login: radial-gradient(90% 45% at 50% -8%, rgba(199, 154, 74, .24) 0%, rgba(199, 154, 74, 0) 66%), #0e1013;
@@ -229,6 +238,14 @@
   --glow-ori: none;
   --glow-ember: none;
   --glow-avatar: none;
+  --bar-default: #f1e4cf;
+  --bar-streak: #f1e4cf;
+  --bar-login: #f0e2cb;
+  --bar-pin: #f0e2cb;
+  --bar-settings: #efe4d2;
+  --bar-together: #f2e7d2;
+  --bar-empty: #ede3d3;
+  --bar-missed: #e9e2d6;
   --wash-default: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 34%);
   --wash-streak: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 32%);
   --wash-login: linear-gradient(180deg, #f0e2cb 0%, #f6f1e9 46%);

@@ -10,7 +10,7 @@ type TabDef = { tab: Exclude<Tab, null>; to: string; icon: IconName; label: stri
 const TODAY: TabDef = { tab: 'today', to: '/today', icon: 'sun', label: 'Today' }
 const YOU: TabDef = { tab: 'you', to: '/profile', icon: 'user', label: 'You' }
 
-/** Leo's bar is built around routines, Sonia's around her plan. Same five slots, Ori in the centre. */
+/** Leo's bar is built around routines, Soniya's around her plan. Same five slots, Ori in the centre. */
 export const TABS: Record<Role, TabDef[]> = {
   leo: [TODAY, { tab: 'routines', to: '/routines', icon: 'list', label: 'Routines' }, { tab: 'streaks', to: '/streak', icon: 'flame', label: 'Streaks' }, YOU],
   sonia: [TODAY, { tab: 'calendar', to: '/calendar', icon: 'calendar', label: 'Calendar' }, { tab: 'upcoming', to: '/tasks', icon: 'list', label: 'Upcoming' }, YOU],

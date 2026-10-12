@@ -29,7 +29,7 @@ export function leoStats(s: Pick<DataState, 'routines' | 'completions'>, today: 
 const goodDay = (done: number, total: number) => total > 0 && done / total >= PARTIAL
 
 /**
- * Sonia's planning streak: days in a row where she got through at least 60% of what she planned.
+ * Soniya's planning streak: days in a row where she got through at least 60% of what she planned.
  * Days with nothing planned don't count either way; today only adds once it qualifies.
  */
 export function planningStreak(s: Pick<DataState, 'tasks'>, today: string) {

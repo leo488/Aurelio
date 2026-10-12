@@ -79,7 +79,7 @@ export function checkReminders(user: User, now = new Date()) {
     }
   }
 
-  // Sonia's morning summary: today's plan and anything overdue.
+  // Soniya's morning summary: today's plan and anything overdue.
   if (user.role === 'sonia' && settings.notif.summary !== false && mins >= 8 * 60 && mins < 12 * 60) {
     const planned = s.tasks.filter((t) => t.date === today && !t.completed).length
     const overdue = s.tasks.filter((t) => !t.completed && t.date && t.date < today).length
@@ -91,7 +91,7 @@ export function checkReminders(user: User, now = new Date()) {
     }
   }
 
-  // Task reminders and deadline warnings (anyone with tasks; in practice Sonia).
+  // Task reminders and deadline warnings (anyone with tasks; in practice Soniya).
   for (const t of s.tasks) {
     if (t.completed) continue
     if (settings.notif.reminders && t.reminderAt && t.reminderAt.slice(0, 10) <= today && toDate(t.reminderAt) <= now && t.reminderAt.slice(0, 10) >= addDays(today, -1)) {
