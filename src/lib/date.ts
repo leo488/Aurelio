@@ -129,3 +129,10 @@ export const isoWeek = (iso: string) => {
   const { week, year } = isoWeekOf(fromISO(iso))
   return { week, of: isoWeekOf(new Date(year, 11, 28)).week, year }
 }
+
+/** The ISO week as a stable key, "2026-W42", and the Monday it starts on. */
+export const weekKey = (iso: string) => {
+  const { week, year } = isoWeek(iso)
+  return `${year}-W${pad(week)}`
+}
+export const weekStart = (iso: string) => addDays(iso, -weekday(iso))

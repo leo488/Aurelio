@@ -11,12 +11,12 @@ import { checkPin, hasPin, savePin } from '../pin'
 
 const TABLE: Record<CollectionName, string> = {
   profiles: 'profiles', routines: 'routines', completions: 'routine_completions', tasks: 'tasks',
-  notifications: 'notifications', activity: 'activity', settings: 'settings', statuses: 'daily_status',
+  notifications: 'notifications', activity: 'activity', settings: 'settings', statuses: 'daily_status', goals: 'weekly_goals',
 }
 
 /** Columns Postgres returns as timestamptz; normalised back to the ISO strings the app writes. */
-const TIMESTAMPS = new Set(['updated_at', 'completed_at', 'started_at', 'scheduled_for'])
-const TIMESTAMP_CREATED = new Set<CollectionName>(['tasks', 'notifications', 'activity'])
+const TIMESTAMPS = new Set(['updated_at', 'completed_at', 'started_at', 'scheduled_for', 'done_at'])
+const TIMESTAMP_CREATED = new Set<CollectionName>(['tasks', 'notifications', 'activity', 'goals'])
 
 const snake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
@@ -124,6 +124,7 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
     activity: collection(sb, 'activity'),
     settings: collection(sb, 'settings'),
     statuses: collection(sb, 'statuses'),
+    goals: collection(sb, 'goals'),
   }
   const backend = withOutbox(raw)
   void backend.flush()

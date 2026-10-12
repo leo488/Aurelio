@@ -137,3 +137,38 @@ button:disabled { cursor: default; }
 a:active { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { button:active, a:active { transform: none; } }
 @keyframes bar-grow { from { transform: scaleY(.08) } to { transform: none } }
+
+/* Stat cards at the top of Today */
+.stat-card { display: flex; flex-direction: column; min-width: 0; min-height: 132px; padding: 13px 12px 13px; color: inherit; text-align: left; position: relative; overflow: hidden; }
+.stat-card.tappable { transition: transform .12s, box-shadow .2s; }
+.stat-card.tappable:active { transform: scale(.96); }
+.stat-eyebrow { font-size: 10px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted-3); font-weight: 800; white-space: nowrap; }
+.goal-plus { width: 18px; height: 18px; border-radius: 50%; background: var(--gold); display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 12px var(--gold-glow, rgba(212, 170, 90, .45)); }
+.wk-dot { height: 6px; border-radius: 3px; background: var(--ring-track); }
+.wk-dot.past { background: var(--muted-4); opacity: .7; }
+.wk-dot.today { background: var(--gold); box-shadow: 0 0 8px rgba(212, 170, 90, .7); animation: wk-pulse 2.4s ease-in-out infinite; }
+@keyframes wk-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .55 } }
+
+/* The streak fire */
+.fire { position: relative; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.fire-emoji { position: relative; display: inline-block; filter: grayscale(1); opacity: .4; transform-origin: 50% 85%; }
+.fire-glow { position: absolute; inset: 8%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 150, 50, .55) 0%, rgba(255, 110, 30, 0) 70%); opacity: 0; }
+.fire.lit .fire-emoji { filter: none; opacity: 1; animation: fire-dance 1.8s ease-in-out infinite; }
+.fire.lit .fire-glow { animation: fire-glow 1.8s ease-in-out infinite; }
+@keyframes fire-dance {
+  0%, 100% { transform: rotate(-3deg) scale(1, 1) }
+  25% { transform: rotate(2deg) scale(1.05, .96) }
+  50% { transform: rotate(-1deg) scale(.97, 1.06) }
+  75% { transform: rotate(3deg) scale(1.03, .99) }
+}
+@keyframes fire-glow { 0%, 100% { opacity: .55; transform: scale(.9) } 50% { opacity: 1; transform: scale(1.15) } }
+
+/* Weekly goals sheet */
+.goal-seg { flex: 1; height: 5px; border-radius: 3px; background: var(--ring-track); transition: background .3s; }
+.goal-seg.done { background: var(--gold); }
+.goal-row { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--divider); animation: pop-in .2s ease; }
+.goal-add { display: flex; align-items: center; gap: 13px; padding: 14px 0 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fire.lit .fire-emoji, .fire.lit .fire-glow, .wk-dot.today { animation: none; }
+}

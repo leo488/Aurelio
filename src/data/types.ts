@@ -96,6 +96,20 @@ export interface RoutineCompletion {
 
 export type Priority = 'low' | 'medium' | 'high'
 
+/** One goal for an ISO week ("2026-W42"). Private to its owner. */
+export interface WeeklyGoal {
+  id: string
+  userId: string
+  week: string
+  title: string
+  done: boolean
+  doneAt?: string
+  /** Order in the list, smallest first. */
+  position: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Task {
   id: string
   userId: string
@@ -160,7 +174,7 @@ export interface AppNotification {
   createdAt: string
 }
 
-export type ActivityKind = 'routine-done' | 'streak' | 'day-planned' | 'day-done' | 'cheer' | 'nudge'
+export type ActivityKind = 'routine-done' | 'streak' | 'day-planned' | 'day-done' | 'cheer' | 'nudge' | 'week-goals'
 
 /** What the other person can see happened. Never carries item details. */
 export interface Activity {

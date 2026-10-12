@@ -92,5 +92,6 @@ export function withOutbox(inner: Backend): Backend & { flush: () => Promise<voi
     activity: wrap('activity'),
     settings: wrap('settings'),
     statuses: wrap('statuses'),
+    goals: wrap('goals'),
   }
 }

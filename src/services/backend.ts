@@ -1,4 +1,4 @@
-import type { Activity, AppNotification, DailyStatus, Role, Routine, RoutineCompletion, Settings, Task, User } from '../data/types'
+import type { Activity, AppNotification, DailyStatus, Role, Routine, RoutineCompletion, Settings, Task, User, WeeklyGoal } from '../data/types'
 
 // The storage contract. The UI never sees this: screens talk to the store, the store talks to the
 // services in this folder, and the services talk to a Backend. Swapping local storage for a
@@ -22,6 +22,7 @@ export interface Backend {
   activity: Collection<Activity>
   settings: Collection<Settings>
   statuses: Collection<DailyStatus>
+  goals: Collection<WeeklyGoal>
 }
 
 export type CollectionName = Exclude<keyof Backend, 'kind'>

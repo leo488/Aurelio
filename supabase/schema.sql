@@ -126,11 +126,25 @@ create table if not exists public.daily_status (
   unique (user_id, date)
 );
 
+-- Goals for an ISO week ("2026-W42"). Private to the owner.
+create table if not exists public.weekly_goals (
+  id         text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  week       text not null check (week ~ '^\d{4}-W\d{2}$'),
+  title      text not null,
+  done       boolean not null default false,
+  done_at    timestamptz,
+  position   integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists routines_user on public.routines (user_id);
 create index if not exists completions_user_date on public.routine_completions (user_id, date);
 create index if not exists tasks_user_date on public.tasks (user_id, date);
 create index if not exists notifications_user on public.notifications (user_id, scheduled_for desc);
 create index if not exists activity_user on public.activity (user_id, created_at desc);
+create index if not exists goals_user_week on public.weekly_goals (user_id, week);
 
 -- ─── Row Level Security ──────────────────────────────────────────────────────
 
@@ -143,12 +157,13 @@ alter table public.notifications       enable row level security;
 alter table public.activity            enable row level security;
 alter table public.settings            enable row level security;
 alter table public.daily_status        enable row level security;
+alter table public.weekly_goals        enable row level security;
 
 -- Private tables: only the owner, and only if they are a member.
 do $$
 declare t text;
 begin
-  foreach t in array array['routines', 'routine_completions', 'tasks', 'settings'] loop
+  foreach t in array array['routines', 'routine_completions', 'tasks', 'settings', 'weekly_goals'] loop
     execute format('drop policy if exists own_rows on public.%I', t);
     execute format('create policy own_rows on public.%I for all to authenticated
       using (user_id = auth.uid() and public.is_member())
