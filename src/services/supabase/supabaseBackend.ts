@@ -3,7 +3,7 @@ import { PROFILES, ROLES, SUPABASE } from '../../config'
 import type { Role, User } from '../../data/types'
 import { AuthError, type AuthService, type Backend, type Collection, type CollectionName, type Session } from '../backend'
 import { NetworkError, withOutbox } from '../outbox'
-import { checkPin, hasPin, pinSecret, savePin } from '../pin'
+import { checkPin, hasPin, savePin } from '../pin'
 
 // The database backend: Supabase (Postgres + Auth). Tables and Row Level Security live in
 // supabase/schema.sql. Records map 1:1 to rows with snake_case columns; nested values
@@ -71,13 +71,45 @@ function collection<T extends { id: string }>(sb: SupabaseClient, name: Collecti
 
 const UNLOCKED = 'aurelio:unlocked'
 
-const roleFor = (email?: string | null): Role | null =>
-  ROLES.find((r) => PROFILES[r].email.toLowerCase() === (email ?? '').toLowerCase()) ?? null
+/** Each account carries its profile in app_metadata (set by the deploy workflow), so the app never needs the emails. */
+const roleFor = (u?: { app_metadata?: Record<string, unknown> } | null): Role | null => {
+  const r = u?.app_metadata?.role
+  return ROLES.find((x) => x === r) ?? null
+}
+
+let client: SupabaseClient | null = null
+/** The connected client, for the push and Ori services. Null in local mode. */
+export const getSupabase = () => client
+
+/** Calls the auth function and turns its error codes into the app's AuthErrors. */
+async function callAuth(sb: SupabaseClient, body: Record<string, unknown>) {
+  const { data, error } = await sb.functions.invoke('auth', { body })
+  if (!error) return data as { session?: { access_token: string; refresh_token: string } }
+  const ctx = (error as { context?: Response }).context
+  let code = ''
+  let left: number | undefined
+  try {
+    const j = (await ctx?.json()) as { error?: string; left?: number }
+    code = j.error ?? ''
+    left = j.left
+  } catch {
+    /* no body: a network failure */
+  }
+  if (!ctx || isNetwork(error.message)) throw new AuthError('You’re offline. Connect to sign in.', 'offline')
+  if (code === 'wrong-pin') throw new AuthError(left && left <= 2 ? `Wrong PIN. ${left} ${left === 1 ? 'try' : 'tries'} left.` : 'Wrong PIN.', 'wrong-pin')
+  if (code === 'locked') throw new AuthError('Too many wrong PINs. Try again in 15 minutes, or use the email link.', 'locked')
+  if (code === 'wrong-code') throw new AuthError('That code isn’t right, or it has expired.', 'wrong-code')
+  if (code === 'not-verified') throw new AuthError('Verify your email first.', 'not-verified')
+  if (code === 'not-allowed') throw new AuthError('This profile isn’t set up yet.', 'not-allowed')
+  if (code === 'rate-limited') throw new AuthError('Too many codes sent. Wait a few minutes and try again.')
+  throw new AuthError('Something went wrong. Try again.')
+}
 
 export function createSupabaseServices(): { backend: Backend; auth: AuthService } {
   const sb = createClient(SUPABASE.url, SUPABASE.anonKey, {
     auth: { persistSession: true, autoRefreshToken: true, storageKey: 'aurelio:supabase-auth' },
   })
+  client = sb
 
   const raw: Backend = {
     kind: 'supabase',
@@ -93,8 +125,8 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
   const backend = withOutbox(raw)
   void backend.flush()
 
-  const userFrom = (u: { id: string; email?: string | null }): User => {
-    const role = roleFor(u.email)
+  const userFrom = (u: { id: string; app_metadata?: Record<string, unknown> }): User => {
+    const role = roleFor(u)
     if (!role) throw new AuthError('This account isn’t one of the two allowed.', 'not-allowed')
     return { id: u.id, email: PROFILES[role].email, name: PROFILES[role].name, role }
   }
@@ -103,7 +135,7 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
   const sessionFor = async (role: Role) => {
     const { data } = await sb.auth.getSession()
     const u = data.session?.user
-    return u && roleFor(u.email) === role ? userFrom(u) : null
+    return u && roleFor(u) === role ? userFrom(u) : null
   }
 
   const unlock = (user: User): Session => {
@@ -111,8 +143,12 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
     return { user }
   }
 
-  const authError = (e: { message: string; status?: number }) =>
-    isNetwork(e.message) ? new AuthError('You’re offline. Connect to sign in.', 'offline') : new AuthError(e.message)
+  const adopt = async (s?: { access_token: string; refresh_token: string }) => {
+    if (!s) throw new AuthError('Something went wrong. Try again.')
+    const { data, error } = await sb.auth.setSession(s)
+    if (error || !data.user) throw new AuthError('Something went wrong. Try again.')
+    return userFrom(data.user)
+  }
 
   const auth: AuthService = {
     async current() {
@@ -125,37 +161,34 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
     hasPin,
 
     async sendCode(role) {
-      // Only the two existing accounts can receive a code; nobody new can sign up.
-      const { error } = await sb.auth.signInWithOtp({ email: PROFILES[role].email, options: { shouldCreateUser: false } })
-      if (error) throw authError(error)
+      // The server looks up the address for this profile; nobody new can sign up.
+      await callAuth(sb, { action: 'send', role })
     },
 
     async verifyCode(role, code) {
-      const { error } = await sb.auth.verifyOtp({ email: PROFILES[role].email, token: code.trim(), type: 'email' })
-      if (error) throw isNetwork(error.message) ? authError(error) : new AuthError('That code isn’t right, or it has expired.', 'wrong-code')
+      const res = await callAuth(sb, { action: 'verify', role, code: code.trim() })
+      await adopt(res.session)
     },
 
     async setPin(role, pin) {
       const user = await sessionFor(role)
       if (!user) throw new AuthError('Verify your email first.', 'not-verified')
-      const { error } = await sb.auth.updateUser({ password: await pinSecret(user.email, pin) })
-      if (error) throw authError(error)
+      await callAuth(sb, { action: 'setpin', pin })
       await savePin(role, pin)
       return unlock(user)
     },
 
     async signInWithPin(role, pin) {
-      const email = PROFILES[role].email
       // Fast path, also offline: the PIN matches this device's hash and the provider session is still here.
       if (await checkPin(role, pin)) {
         const user = await sessionFor(role)
         if (user) return unlock(user)
       }
-      // Otherwise ask the provider (a new device's session expired, or the PIN was changed elsewhere).
-      const { data, error } = await sb.auth.signInWithPassword({ email, password: await pinSecret(email, pin) })
-      if (error) throw isNetwork(error.message) ? authError(error) : new AuthError('Wrong PIN.', 'wrong-pin')
+      // Otherwise ask the server (a new device, an expired session, or the PIN was changed elsewhere).
+      const res = await callAuth(sb, { action: 'pin', role, pin })
+      const user = await adopt(res.session)
       await savePin(role, pin)
-      return unlock(userFrom(data.user))
+      return unlock(user)
     },
 
     async signOut() {

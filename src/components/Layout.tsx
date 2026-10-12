@@ -8,6 +8,7 @@ import { logicalToday } from '../lib/date'
 import { useReminders } from '../lib/reminders'
 import { soniaStats } from '../lib/stats'
 import { dayStreak } from '../lib/streak'
+import { usePushSync } from '../services/push'
 import { BottomBar, type Tab } from './BottomBar'
 import { Toast } from './Toast'
 
@@ -58,6 +59,7 @@ export function Layout() {
   const status = useData((s) => s.status)
   const me = useData((s) => s.me)
   useReminders(me)
+  usePushSync(me)
   useStatusPublisher()
 
   const dark = DARK.includes(pathname)

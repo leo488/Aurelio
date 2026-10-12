@@ -7,7 +7,7 @@ import { useMe } from '../data/session'
 import { useData } from '../data/store'
 import { dateOf, logicalToday, relativeDay, shortDate, timeOf, WEEKDAY_SHORT, weekday } from '../lib/date'
 import { parseRequest, summarize, typeColor, typeLabel, type OriItem } from '../lib/ori'
-import { applyOriItems, firstDate, isRoutineRequest } from '../lib/oriApply'
+import { applyOriItems, firstDate, isRoutineEdit, isRoutineRequest } from '../lib/oriApply'
 import { draftIcon, generateRoutine, type RoutineDraft } from '../lib/routineDraft'
 import { CATEGORY_LABEL } from '../data/select'
 import { uid } from '../data/store'
@@ -58,8 +58,9 @@ export function OriVoice() {
     setTranscript(text)
     setPhase('thinking')
     const started = Date.now()
-    // Leo can ask for a whole routine; it opens as a draft to review, never saved straight away.
-    if (me.role === 'leo' && isRoutineRequest(text)) {
+    // Leo describes a routine in his own words and gets a draft to review, never saved straight away.
+    // Only "move my morning routine to 7" style edits go down the item path.
+    if (me.role === 'leo' && (isRoutineRequest(text) || !isRoutineEdit(text))) {
       setSorted({ count: 0, summary: 'Building a routine' })
       const d = await generateRoutine(text)
       await new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - started))))
@@ -217,7 +218,7 @@ export function OriVoice() {
             <Ori size={40} />
             <div>
               <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>I couldn’t place that.</div>
-              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6, lineHeight: 1.6 }}>{me.role === 'leo' ? <>I can build a routine for you to review, or move one. Try “Create a 30-minute morning routine”.</> : <>I can add tasks, appointments, reminders and deadlines. Try “Lunch with {partnerName} Friday at one”.</>}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6, lineHeight: 1.6 }}>{me.role === 'leo' ? <>Tell me what you do and I’ll turn it into a routine for you to review. Try “Every morning I pray, drink water, work out for 20 minutes and shower”.</> : <>I can add tasks, appointments, reminders and deadlines. Try “Lunch with {partnerName} Friday at one”.</>}</div>
             </div>
           </div>
           <div className="pad dark-bottom" style={{ marginTop: 'auto', display: 'flex', gap: 10 }}>

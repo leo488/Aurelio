@@ -4,7 +4,7 @@ import { Avatar } from '../components/Avatar'
 import { Check } from '../components/controls'
 import { Ember } from '../components/Ember'
 import { Icon } from '../components/Icon'
-import { InstallHint } from '../components/InstallHint'
+import { InstallHint, PushHint } from '../components/InstallHint'
 import { flash } from '../components/Toast'
 import { catLook, headerDate, Label, PartnerStrip, RemindSheet, StatCards, StepRow } from '../components/ui'
 import { useMe } from '../data/session'
@@ -83,6 +83,7 @@ export function Today() {
       </div>
 
       <InstallHint />
+      <PushHint />
 
       <StatCards done={day.done} total={day.total} unit="Routines" streak={streak.current} streakCaption="Day streak" streakTo="/streak" today={today} />
       {sub && !next && <div className="pad" style={{ paddingTop: 12, fontSize: 13.5, color: 'var(--muted-1)' }}>{sub}</div>}

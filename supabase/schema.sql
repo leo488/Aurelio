@@ -1,8 +1,8 @@
 -- Aurelio database: two people, their routines and tasks, and a small shared layer.
 -- Run once in the Supabase SQL editor (Dashboard → SQL → New query). Safe to re-run.
 --
--- Before running: replace the two emails in the `members` insert below with the real ones
--- (the same values as VITE_LEO_EMAIL and VITE_SONIA_EMAIL).
+-- The deploy workflow (.github/workflows/pages.yml) runs this, then push.sql, and fills `members`
+-- from the LEO_EMAIL and SONIYA_EMAIL repository secrets so the addresses never live in the code.
 
 -- ─── Who may use the app ─────────────────────────────────────────────────────
 
@@ -10,11 +10,6 @@ create table if not exists public.members (
   email text primary key,
   role  text not null unique check (role in ('leo', 'sonia'))
 );
-
-insert into public.members (email, role) values
-  ('leo@example.com', 'leo'),
-  ('sonia@example.com', 'sonia')
-on conflict (role) do update set email = excluded.email;
 
 -- True when the signed-in user is one of the two members. Every policy below checks it.
 create or replace function public.is_member() returns boolean

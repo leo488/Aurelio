@@ -41,9 +41,9 @@ First time on a device: pick a profile, enter the code sent to that profile's em
 After that: "Who are you?", then the PIN. The app locks again when it is closed. Nothing private renders before sign-in.
 
 PINs are never stored as typed. The device keeps a salted PBKDF2 hash (210k iterations) with a lockout that backs off
-after 5 misses. With Supabase, the account password is a PBKDF2 secret derived from the PIN and email, so a PIN also
-works on a second device. A short PIN is still a short password: the email code is the real gate, and new sign-ups
-must stay off in Supabase.
+after 5 misses. With Supabase, sign-in goes through the `auth` edge function, so the emails never ship in the app:
+the account password is an HMAC of the PIN with a server-only pepper, and five wrong PINs lock the profile for 15
+minutes on the server. Sign-ups are off, so only the two members can get a code.
 
 ## Configuration
 
@@ -58,13 +58,28 @@ Copy `.env.example` to `.env.local`.
 **Local mode** (no Supabase vars) keeps everything in this browser with demo data, and the email code is `123456`.
 Settings → Reset demo data puts the demo back.
 
-### Supabase setup
+### Supabase setup (automatic)
 
-1. Create a project. In Authentication → Providers → Email, turn off "Allow new users to sign up".
-2. Edit the two emails at the top of `supabase/schema.sql`, then run it in the SQL editor.
-3. Authentication → Users → Add user, once for each email (no password needed).
-4. Authentication → Email Templates → Magic Link: include `{{ .Token }}` so the email carries the 6-digit code.
-5. Set the env vars above where the app is built.
+The Pages workflow sets up the backend on every deploy once these repository secrets exist
+(Settings → Secrets and variables → Actions):
+
+| Secret | Where it comes from |
+| --- | --- |
+| `LEO_EMAIL`, `SONIYA_EMAIL` | The two members' addresses. |
+| `SUPABASE_ACCESS_TOKEN` | supabase.com/dashboard/account/tokens (starts with `sbp_`). |
+| `ANTHROPIC_API_KEY` | console.anthropic.com. Used only by the `ori` edge function. |
+
+`scripts/supabase-setup.mjs` applies `supabase/schema.sql` and `supabase/push.sql`, fills `members`, creates both
+users, turns off sign-ups, sets the code email template, creates the VAPID keys, PIN pepper and cron secret, and
+schedules `push-dispatch` every minute with pg_cron. The workflow then deploys the `auth`, `ori` and `push-dispatch`
+functions, runs `scripts/supabase-smoke.mjs` against the live project, and builds the app with the project URL and
+anon key. If the secrets are missing, the backend job is skipped and the site ships in local mode.
+
+**Push:** the app works out a week of reminders and syncs them to `scheduled_pushes`; the cron job sends the due ones
+as Web Push, so reminders arrive with the app closed. Nudges between the two are queued by a database trigger.
+
+**Ori:** voice and text requests go to the `ori` function, which turns them into routines (Leo) or tasks and events
+(Soniya). With no backend, the on-device parser is used instead.
 
 ## Things to know
 

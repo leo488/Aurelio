@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
-import { InstallHint } from '../components/InstallHint'
+import { InstallHint, PushHint } from '../components/InstallHint'
 import { parseQuickTask } from '../components/tasks'
 import { flash } from '../components/Toast'
 import { headerDate, Label, PartnerStrip, RemindSheet, shortDay, StatCards, TaskSheet, TaskTimeRow } from '../components/ui'
@@ -53,6 +53,7 @@ export function SoniaToday() {
       </div>
 
       <InstallHint />
+      <PushHint />
 
       <StatCards done={done} total={list.length} unit="Tasks" streak={planning} streakCaption="Plan streak" streakTo="/profile" today={today} />
       <div className="pad" style={{ paddingTop: 14, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-text)' }}>

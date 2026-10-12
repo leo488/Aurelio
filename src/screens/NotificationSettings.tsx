@@ -7,6 +7,7 @@ import { useData } from '../data/store'
 import type { Settings } from '../data/types'
 import { isIOS, isStandalone } from '../lib/install'
 import { notificationsSupported } from '../lib/reminders'
+import { registerPush, syncPushes } from '../services/push'
 
 type Perm = 'default' | 'granted' | 'denied'
 const NOT_NOW = 'aurelio-notify-not-now'
@@ -29,7 +30,10 @@ export function NotificationSettings() {
   const allow = async () => {
     const p = (await Notification.requestPermission()) as Perm
     setPerm(p)
-    if (p === 'granted') flash('Notifications on')
+    if (p === 'granted') {
+      flash('Notifications on')
+      void registerPush(me).then((ok) => { if (ok) void syncPushes(me) })
+    }
   }
   const notNow = () => {
     try { sessionStorage.setItem(NOT_NOW, '1') } catch { /* fine */ }
