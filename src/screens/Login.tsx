@@ -81,7 +81,7 @@ export function Login() {
 
   return (
     <main className="screen no-bar" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--wash-pin)' }}>
-      <div style={{ alignSelf: 'stretch', padding: 'calc(var(--safe-top) + 10px) 26px 0' }}>
+      <div style={{ alignSelf: 'stretch', padding: 'calc(var(--safe-top) + 10px) var(--pad-x) 0' }}>
         <button type="button" onClick={back} aria-label="Back" style={{ fontSize: 20, lineHeight: 1, color: 'var(--ink)' }}>‹</button>
       </div>
       <Avatar user={role} size={76} style={{ marginTop: 14, filter: 'var(--glow-avatar)' }} />

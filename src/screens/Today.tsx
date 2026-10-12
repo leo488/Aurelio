@@ -86,7 +86,7 @@ export function Today() {
       <InstallHint />
       <PushHint />
 
-      <StatCards done={day.done} total={day.total} unit="Routines" streak={streak.current} streakCaption="Day streak" streakTo="/streak" today={today} />
+      <StatCards done={day.done} total={day.total} unit="Routines" streak={streak.current} streakCaption="Day streak" streakTo="/streak" today={today} fire weekTo="/week" />
       {sub && !next && <div className="pad" style={{ paddingTop: 12, fontSize: 13.5, color: 'var(--muted-1)' }}>{sub}</div>}
 
       {next && look && (

@@ -78,7 +78,7 @@ export function Calendar() {
           })}
         </div>
       </div>
-      <div style={{ marginTop: 18, background: 'var(--chip-alt-2)', borderRadius: '28px 28px 0 0', padding: '22px 26px calc(130px + var(--safe-bottom))', minHeight: 300 }}>
+      <div style={{ marginTop: 18, background: 'var(--chip-alt-2)', borderRadius: '16px 16px 0 0', padding: '22px var(--pad-x) calc(130px + var(--safe-bottom))', minHeight: 300 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
             <div className="display" style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.022em' }}>{selected === today ? 'Today · ' : ''}{longDay(selected)}</div>
@@ -93,7 +93,7 @@ export function Calendar() {
           {items.length === 0 && (
             <div style={{ padding: '30px 0 10px', textAlign: 'center' }}>
               <div style={{ fontSize: 14, color: 'var(--muted-2)' }}>Nothing planned for this day.</div>
-              <button type="button" onClick={add} style={{ marginTop: 12, background: 'var(--ink)', color: 'var(--paper)', fontSize: 13, fontWeight: 800, padding: '11px 18px', borderRadius: 16 }}>Plan something</button>
+              <button type="button" onClick={add} style={{ marginTop: 12, background: 'var(--ink)', color: 'var(--paper)', fontSize: 13, fontWeight: 800, padding: '11px 18px', borderRadius: 10 }}>Plan something</button>
             </div>
           )}
         </div>

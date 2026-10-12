@@ -135,7 +135,7 @@ export function FlatButton({ children, onClick, tone = 'chip', style }: { childr
     clay: { background: 'var(--clay-badge)', color: 'var(--clay)' },
   }
   return (
-    <button type="button" onClick={onClick} style={{ flex: 1, padding: 14, borderRadius: 16, fontSize: 14, fontWeight: 800, textAlign: 'center', ...tones[tone], ...style }}>{children}</button>
+    <button type="button" onClick={onClick} style={{ flex: 1, padding: 14, borderRadius: 10, fontSize: 14, fontWeight: 800, textAlign: 'center', ...tones[tone], ...style }}>{children}</button>
   )
 }
 
@@ -243,7 +243,7 @@ export function TaskSheet({ taskId, onClose }: { taskId: string | null; onClose:
         <Toggle label="Reminder" on={!!t.reminderAt} onChange={(on) => data.updateTask(t.id, { reminderAt: on ? defaultReminder(t.date ?? today, t.startTime) : undefined })} />
       </div>
       <button type="button" onClick={() => { if (!t.completed) flash(`Done · ${t.title}`); data.toggleTask(t.id); onClose() }}
-        style={{ width: '100%', marginTop: 8, padding: 16, borderRadius: 18, background: 'var(--ink)', color: 'var(--paper)', fontSize: 15, fontWeight: 800 }}>
+        style={{ width: '100%', marginTop: 8, padding: 16, borderRadius: 12, background: 'var(--ink)', color: 'var(--paper)', fontSize: 15, fontWeight: 800 }}>
         {t.completed ? 'Mark as not done' : 'Mark complete'}
       </button>
       <div style={{ display: 'flex', gap: 8, marginTop: 9 }}>
@@ -272,7 +272,7 @@ export function PartnerStrip({ onRemind }: { onRemind: () => void }) {
   const { partnerRole, partnerName } = useMe()
   const line = usePartnerLine()
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', borderRadius: 20, background: 'var(--chip-alt-2)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px', borderRadius: 12, background: 'var(--chip-alt-2)' }}>
       <Avatar user={partnerRole} size={28} />
       <div style={{ flex: 1, fontSize: 13.5, color: 'var(--chip-suggest-text)', lineHeight: 1.4 }}><span style={{ fontWeight: 800, color: 'var(--ink)' }}>{partnerName}</span> · {line}</div>
       <button type="button" onClick={onRemind} style={{ background: 'var(--white)', color: 'var(--ink)', fontSize: 12, fontWeight: 800, padding: '8px 12px', borderRadius: 99 }}>Remind</button>
@@ -315,7 +315,7 @@ export function RemindSheet({ open, onClose }: { open: boolean; onClose: () => v
           </button>
         ))}
       </div>
-      <button type="button" onClick={() => { onClose(); cheer() }} style={{ width: '100%', marginTop: 16, padding: 15, borderRadius: 18, background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontSize: 14.5, fontWeight: 800 }}>Just send a cheer</button>
+      <button type="button" onClick={() => { onClose(); cheer() }} style={{ width: '100%', marginTop: 16, padding: 15, borderRadius: 12, background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontSize: 14.5, fontWeight: 800 }}>Just send a cheer</button>
     </Sheet>
   )
 }

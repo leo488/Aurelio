@@ -47,7 +47,7 @@ export function Routines() {
             <Ember streak={0} size={64} style={{ display: 'inline-block' }} />
             <div className="display" style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-.025em', marginTop: 18 }}>No routines yet</div>
             <div style={{ fontSize: 14, color: 'var(--muted-2)', marginTop: 8, lineHeight: 1.6 }}>Build one by hand, or tap Ori and say what you want.</div>
-            <button type="button" onClick={() => navigate('/routines/new')} style={{ marginTop: 20, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800, padding: '14px 22px', borderRadius: 18 }}>Create a routine</button>
+            <button type="button" onClick={() => navigate('/routines/new')} style={{ marginTop: 20, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800, padding: '14px 22px', borderRadius: 12 }}>Create a routine</button>
           </div>
         )}
       </div>

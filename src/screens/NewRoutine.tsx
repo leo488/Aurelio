@@ -198,7 +198,7 @@ function Builder({ routine }: { routine?: Routine }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
           {steps.map((st, i) => (
-            <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px', borderRadius: 18, background: 'var(--white)', animation: 'fade-in .2s ease' }}>
+            <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px', borderRadius: 12, background: 'var(--white)', animation: 'fade-in .2s ease' }}>
               <div style={{ width: 20, fontSize: 12, fontWeight: 800, color: 'var(--drag-handle)' }}>{i + 1}</div>
               <button type="button" onClick={() => setEditing(st)} style={{ flex: 1, fontSize: 15, fontWeight: 700, textAlign: 'left' }}>{st.title}</button>
               {!!st.duration && <div style={{ fontSize: 12, color: 'var(--muted-3)', fontWeight: 600 }}>{st.duration} min</div>}
@@ -208,7 +208,7 @@ function Builder({ routine }: { routine?: Routine }) {
             </div>
           ))}
           {steps.length === 0 && <div style={{ fontSize: 13, color: 'var(--muted-3)', padding: '4px 2px 2px' }}>No steps yet. Add the first one below.</div>}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 6px 6px 14px', borderRadius: 18, border: '1px dashed var(--dashed)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 6px 6px 14px', borderRadius: 12, border: '1px dashed var(--dashed)' }}>
             <input value={newStep} onChange={(e) => setNewStep(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addStep()} placeholder="Add a step…" aria-label="New step"
               style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 16, color: 'var(--ink)', padding: '8px 0' }} />
             <button type="button" onClick={addStep} style={{ background: 'var(--ink)', color: 'var(--paper)', fontSize: 12.5, fontWeight: 800, padding: '9px 14px', borderRadius: 14 }}>Add</button>

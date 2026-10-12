@@ -99,8 +99,8 @@ export function Profile() {
           <div style={{ flex: 1, fontSize: 14, color: 'var(--chip-suggest-text)' }}>{partnerLine}</div>
         </div>
         <div style={{ display: 'flex', gap: 9 }}>
-          <button type="button" onClick={() => setRemind(true)} style={{ flex: 1, padding: 14, borderRadius: 16, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800 }}>Send a reminder</button>
-          <button type="button" onClick={cheer} style={{ flex: 1, padding: 14, borderRadius: 16, background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontSize: 14, fontWeight: 800 }}>Send a cheer</button>
+          <button type="button" onClick={() => setRemind(true)} style={{ flex: 1, padding: 14, borderRadius: 10, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800 }}>Send a reminder</button>
+          <button type="button" onClick={cheer} style={{ flex: 1, padding: 14, borderRadius: 10, background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontSize: 14, fontWeight: 800 }}>Send a cheer</button>
         </div>
       </div>
 

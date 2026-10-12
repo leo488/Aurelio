@@ -57,7 +57,7 @@ export function OriChat() {
 
   return (
     <main className="screen no-bar" style={{ height: '100dvh', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: 'calc(var(--safe-top) + 12px) 26px 16px', display: 'flex', alignItems: 'center', gap: 11, borderBottom: '1px solid var(--divider)' }}>
+      <div style={{ padding: 'calc(var(--safe-top) + 12px) var(--pad-x) 16px', display: 'flex', alignItems: 'center', gap: 11, borderBottom: '1px solid var(--divider)' }}>
         <Ori size={32} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 800 }}>Ori</div>
@@ -66,7 +66,7 @@ export function OriChat() {
         <button type="button" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/today'))} style={{ fontSize: 13.5, color: 'var(--muted-2)', fontWeight: 700 }}>Close</button>
       </div>
 
-      <div style={{ flex: 1, padding: '20px 26px 0', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }} aria-live="polite">
+      <div style={{ flex: 1, padding: '20px var(--pad-x) 0', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }} aria-live="polite">
         {chat.length === 0 && (
           <div style={{ textAlign: 'center', padding: '50px 20px 0' }}>
             <Ori size={76} animate style={{ display: 'inline-block' }} />
@@ -93,10 +93,10 @@ export function OriChat() {
         {SUGGESTIONS[me.role].map((s) => <button key={s} type="button" className="chip soft" style={{ flex: '0 0 auto' }} onClick={() => send(s)}>{s}</button>)}
       </div>
       <form style={{ padding: '14px 22px calc(36px + var(--safe-bottom) * .5)', flex: '0 0 auto' }} onSubmit={(e) => { e.preventDefault(); send(text) }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--white)', border: '1px solid var(--input-line)', borderRadius: 22, padding: '7px 7px 7px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--white)', border: '1px solid var(--input-line)', borderRadius: 14, padding: '7px 7px 7px 16px' }}>
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Message Ori" aria-label="Message Ori"
             style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 16, color: 'var(--ink)', padding: '8px 0' }} />
-          <button type="submit" style={{ background: 'var(--chip)', color: 'var(--ink)', fontSize: 12.5, fontWeight: 800, padding: '10px 13px', borderRadius: 16 }}>Send</button>
+          <button type="submit" style={{ background: 'var(--chip)', color: 'var(--ink)', fontSize: 12.5, fontWeight: 800, padding: '10px 13px', borderRadius: 10 }}>Send</button>
           <button type="button" aria-label="Speak to Ori" onClick={() => navigate('/ori', { replace: true })} style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
             <div style={{ width: 11, height: 16, borderRadius: 6, background: 'var(--gold)' }} />
           </button>

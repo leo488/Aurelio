@@ -19,6 +19,7 @@ import { RunDone } from './screens/RunDone'
 import { Runner } from './screens/Runner'
 import { SoniaToday } from './screens/SoniaToday'
 import { Streak } from './screens/Streak'
+import { Week } from './screens/Week'
 import { TaskForm } from './screens/TaskForm'
 import { Tasks } from './screens/Tasks'
 import { Today } from './screens/Today'
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/run" element={leo(<Runner />)} />
           <Route path="/run/done" element={leo(<RunDone />)} />
           <Route path="/streak" element={leo(<Streak />)} />
+          <Route path="/week" element={leo(<Week />)} />
           <Route path="/milestone" element={leo(<Milestone />)} />
           <Route path="/missed" element={leo(<Missed />)} />
 

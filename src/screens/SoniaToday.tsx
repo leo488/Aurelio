@@ -5,14 +5,13 @@ import { Icon } from '../components/Icon'
 import { InstallHint, PushHint } from '../components/InstallHint'
 import { parseQuickTask } from '../components/tasks'
 import { flash } from '../components/Toast'
-import { StatCards } from '../components/StatCards'
-import { headerDate, Label, PartnerStrip, RemindSheet, shortDay, TaskSheet, TaskTimeRow } from '../components/ui'
+import { headerDate, Label, PartnerStrip, RemindSheet, Ring, shortDay, TaskSheet, TaskTimeRow } from '../components/ui'
 import { useMe } from '../data/session'
 import { overdueTasks, tasksOn } from '../data/select'
 import { useData } from '../data/store'
 import { addDays, hhmm, logicalToday, looseTime, nowMinutes } from '../lib/date'
 import { greeting } from '../lib/greeting'
-import { soniaStats } from '../lib/stats'
+import { useCountUp } from '../lib/useCountUp'
 
 /** Soniya's home: what's on today, how far through it she is, and adding a task in place. */
 export function SoniaToday() {
@@ -26,7 +25,7 @@ export function SoniaToday() {
   const now = new Date()
   const list = tasksOn(data, today)
   const done = list.filter((t) => t.completed).length
-  const planning = soniaStats(data, today).streak
+  const ring = useCountUp(list.length ? Math.round((done / list.length) * 100) : 0)
   const overdue = overdueTasks(data, today)
   const clock = hhmm(nowMinutes(now))
   const next = list.find((t) => !t.completed && t.startTime && t.startTime >= clock) ?? list.find((t) => !t.completed)
@@ -56,16 +55,24 @@ export function SoniaToday() {
       <InstallHint />
       <PushHint />
 
-      <StatCards done={done} total={list.length} unit="Tasks" streak={planning} streakCaption="Plan streak" streakTo="/profile" today={today} />
-      <div className="pad" style={{ paddingTop: 14, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--gold-text)' }}>
-        <Icon name="clock" size={15} stroke={1.7} color="var(--gold-text)" />
-        <div style={{ fontSize: 12.5, fontWeight: 800 }}>{next ? `Next: ${next.title}${next.startTime ? ` at ${next.startTime}` : ''}` : list.length ? 'Nothing left today' : 'Nothing planned today'}</div>
+      <div className="pad" style={{ paddingTop: 24, display: 'flex', alignItems: 'center', gap: 18 }}>
+        <Ring pct={ring}>
+          <div className="display" style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-.03em' }}>{done}/{list.length}</div>
+        </Ring>
+        <div style={{ flex: 1 }}>
+          <div className="display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.025em' }}>{list.length} {list.length === 1 ? 'task' : 'tasks'} today</div>
+          <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 3 }}>{done} completed · {list.length - done} remaining</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 9, color: 'var(--gold-text)' }}>
+            <Icon name="clock" size={15} stroke={1.7} color="var(--gold-text)" />
+            <div style={{ fontSize: 12.5, fontWeight: 800 }}>{next ? `Next: ${next.title}${next.startTime ? ` at ${next.startTime}` : ''}` : 'Nothing left today'}</div>
+          </div>
+        </div>
       </div>
 
       {overdue.length > 0 && (
         <div className="pad" style={{ paddingTop: 22, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {overdue.map((t) => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 15px', borderRadius: 18, background: 'var(--clay-badge)' }}>
+            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 15px', borderRadius: 12, background: 'var(--clay-badge)' }}>
               <button type="button" aria-label={`Complete: ${t.title}`} onClick={() => { data.toggleTask(t.id); flash(`Done · ${t.title}`) }} style={{ lineHeight: 0, flex: '0 0 auto' }}>
                 <span style={{ display: 'block', width: 22, height: 22, borderRadius: '50%', border: '1.8px solid var(--clay-pale)', boxSizing: 'border-box' }} />
               </button>
@@ -81,7 +88,7 @@ export function SoniaToday() {
       )}
 
       <div className="pad" style={{ paddingTop: 22 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--white)', border: '1px solid var(--input-line)', borderRadius: 20, padding: '8px 8px 8px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--white)', border: '1px solid var(--input-line)', borderRadius: 12, padding: '8px 8px 8px 16px' }}>
           <input value={quick} onChange={(e) => setQuick(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} placeholder="Add a task for today…" aria-label="Add a task for today"
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 16, color: 'var(--ink)', padding: '8px 0', minWidth: 0 }} />
           <button type="button" onClick={add} aria-label="Add"

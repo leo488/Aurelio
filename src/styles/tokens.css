@@ -93,15 +93,15 @@
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  --radius-card: 26px;
-  --radius-sheet: 30px;
-  --radius-panel: 28px;
-  --radius-button: 18px;
-  --radius-tile: 16px;
+  --radius-card: 12px;
+  --radius-sheet: 20px;
+  --radius-panel: 14px;
+  --radius-button: 12px;
+  --radius-tile: 10px;
   --radius-pill: 99px;
 
-  --pad-x: 26px;
-  --app-max: 390px;
+  --pad-x: 18px;
+  --app-max: 480px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --content-top: calc(var(--safe-top) + 16px);

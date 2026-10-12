@@ -66,7 +66,7 @@ export function NotificationSettings() {
       </div>
       <div className="pad" style={{ paddingTop: 22 }}>
         {perm === 'default' && (
-          <div style={{ padding: 18, borderRadius: 20, background: 'var(--chip-alt-2)' }}>
+          <div style={{ padding: 18, borderRadius: 12, background: 'var(--chip-alt-2)' }}>
             <div style={{ fontSize: 15, fontWeight: 800 }}>Turn on notifications</div>
             <div style={{ fontSize: 13, color: 'var(--chip-text)', lineHeight: 1.55, marginTop: 5 }}>Your phone asks once. Reminders still show in the inbox if you say no.</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
@@ -76,13 +76,13 @@ export function NotificationSettings() {
           </div>
         )}
         {perm === 'granted' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderRadius: 18, background: 'var(--ok-soft)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderRadius: 12, background: 'var(--ok-soft)' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--olive)' }} />
             <div style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: 'var(--ok-text)' }}>Notifications are on for this device</div>
           </div>
         )}
         {perm === 'denied' && (
-          <div style={{ padding: '16px 18px', borderRadius: 20, background: 'var(--clay-badge)' }}>
+          <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--clay-badge)' }}>
             <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--clay-strong)' }}>Notifications are off</div>
             <div style={{ fontSize: 13, color: 'var(--clay-strong)', lineHeight: 1.55, marginTop: 5 }}>Blocked or not supported in this browser. Reminders still appear in your inbox. On iPhone, add Aurelio to your Home Screen first.</div>
             <button type="button" onClick={tryAgain} style={{ marginTop: 12, background: 'var(--white)', color: 'var(--clay-strong)', fontSize: 12.5, fontWeight: 800, padding: '9px 14px', borderRadius: 12 }}>Try again</button>

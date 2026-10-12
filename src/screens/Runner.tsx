@@ -67,7 +67,7 @@ export function Runner() {
             <div key={it.id} style={{ flex: 1, maxWidth: 40, height: 4, borderRadius: 2, transition: 'background .3s', background: isDone(it.id) ? 'var(--olive)' : i === idx ? 'var(--gold)' : 'var(--dark-pending)' }} />
           ))}
         </div>
-        <button type="button" onClick={() => advance(true)} style={{ padding: 19, borderRadius: 22, background: 'var(--gold)', color: 'var(--on-gold)', fontSize: 16, fontWeight: 800, textAlign: 'center' }}>Mark done</button>
+        <button type="button" onClick={() => advance(true)} style={{ padding: 19, borderRadius: 14, background: 'var(--gold)', color: 'var(--on-gold)', fontSize: 16, fontWeight: 800, textAlign: 'center' }}>Mark done</button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" className="btn-dark-outline" onClick={() => advance(false)}>Skip step</button>
           <button type="button" className="btn-dark-outline" onClick={() => { navigate('/today'); flash(`${r.name} moved to later today`) }}>Later today</button>

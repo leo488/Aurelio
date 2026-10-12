@@ -91,7 +91,7 @@ export function Notifications() {
       {preview && (
         <div className="pad" style={{ paddingTop: 28 }}>
           <Label style={{ marginBottom: 14 }}>On the lock screen</Label>
-          <div style={{ borderRadius: 22, padding: '16px 17px', background: 'var(--ink)', color: 'var(--paper)' }}>
+          <div style={{ borderRadius: 14, padding: '16px 17px', background: 'var(--ink)', color: 'var(--paper)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
               <AppMark size={18} />
               <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--glyph-close)', letterSpacing: '.04em' }}>AURELIO · now</div>

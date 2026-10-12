@@ -26,7 +26,7 @@ export function EmptyDay() {
         <div style={{ fontSize: 14, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 8 }}>Build one by hand, or tap Ori and say what you want.</div>
       </div>
       <div className="pad" style={{ paddingTop: 20, display: 'flex', flexDirection: 'column' }}>
-        <button type="button" onClick={() => navigate('/routines/new')} style={{ alignSelf: 'center', background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800, padding: '14px 22px', borderRadius: 18 }}>Create a routine</button>
+        <button type="button" onClick={() => navigate('/routines/new')} style={{ alignSelf: 'center', background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800, padding: '14px 22px', borderRadius: 12 }}>Create a routine</button>
         <button type="button" className="ori-card" style={{ marginTop: 16 }} onClick={() => navigate('/routines/new', { state: { ask: true } })}>
           <Ori size={26} />
           <div style={{ fontSize: 13.5, color: 'var(--chip-suggest-text)', lineHeight: 1.45 }}>“Create a 30-minute morning routine for me.”</div>

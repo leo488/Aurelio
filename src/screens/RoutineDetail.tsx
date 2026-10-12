@@ -47,7 +47,7 @@ export function RoutineDetail() {
 
   return (
     <main className="screen">
-      <div style={{ padding: 'calc(var(--safe-top) + 16px) 26px 26px', background: `linear-gradient(170deg, var(--hero-${r.timeCategory}), var(--paper))` }}>
+      <div style={{ padding: 'calc(var(--safe-top) + 16px) var(--pad-x) 26px', background: `linear-gradient(170deg, var(--hero-${r.timeCategory}), var(--paper))` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button type="button" aria-label="Back" onClick={() => navigate('/routines')} style={{ fontSize: 20, lineHeight: 1, color: 'var(--ink)' }}>‹</button>
           <button type="button" onClick={() => navigate(`/routines/${r.id}/edit`)} style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--gold-text)' }}>Edit</button>

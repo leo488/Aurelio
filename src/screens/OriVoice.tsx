@@ -185,15 +185,15 @@ export function OriVoice() {
 
       {phase === 'typing' && (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'slide-up .3s ease' }}>
-          <div style={{ padding: '30px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+          <div style={{ padding: '30px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
             <div className="display" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>Tell me what’s coming up.</div>
           </div>
-          <div style={{ padding: '22px 26px 0' }}>
+          <div style={{ padding: '22px var(--pad-x) 0' }}>
             <textarea autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} rows={4} aria-label="What should Ori add?"
               placeholder="Tomorrow I have class from nine to twelve, remind me at four to work on my assignment, and it’s due Friday"
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); think(typed) } }}
-              style={{ width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 18, padding: 16, color: 'var(--on-dark)', fontSize: 16, lineHeight: 1.5, outline: 'none', resize: 'none' }} />
+              style={{ width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 12, padding: 16, color: 'var(--on-dark)', fontSize: 16, lineHeight: 1.5, outline: 'none', resize: 'none' }} />
             <div style={{ fontSize: 12.5, color: 'var(--dark-hint)', marginTop: 10, lineHeight: 1.5 }}>Voice isn’t available here, so type it instead. Nothing is saved until you say so.</div>
           </div>
           <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 24 }}>
@@ -214,7 +214,7 @@ export function OriVoice() {
 
       {phase === 'nothing' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease' }}>
-          <div style={{ padding: '26px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+          <div style={{ padding: '26px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
             <div>
               <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>I couldn’t place that.</div>
@@ -230,14 +230,14 @@ export function OriVoice() {
 
       {phase === 'draft' && draft && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease', minHeight: 0 }}>
-          <div style={{ padding: '24px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+          <div style={{ padding: '24px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
             <div>
               <div className="display" style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>Here’s a draft.</div>
               <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6 }}>Nothing is saved until you say so.</div>
             </div>
           </div>
-          <div style={{ padding: '22px 26px 0' }}>
+          <div style={{ padding: '22px var(--pad-x) 0' }}>
             <div className="display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.025em' }}>{draft.name}</div>
             <div style={{ fontSize: 12.5, color: 'var(--glyph-close)', marginTop: 4, fontWeight: 600 }}>
               {[draft.timeCategory === 'custom' ? draft.categoryLabel || 'Custom' : CATEGORY_LABEL[draft.timeCategory], draft.scheduledTime, daysLabel(draft.days ?? [0, 1, 2, 3, 4, 5, 6]), totalMinutes(draft.steps) ? `${totalMinutes(draft.steps)} min` : ''].filter(Boolean).join(' · ')}
@@ -270,14 +270,14 @@ export function OriVoice() {
 
       {phase === 'confirm' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease' }}>
-          <div style={{ padding: '26px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+          <div style={{ padding: '26px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
             <div style={{ flex: 1 }}>
               <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>{numberWord(items.length)} {items.every((i) => i.type === 'task' || i.type === 'deadline') ? 'tasks' : 'things'}. Have a look.</div>
               <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6 }}>Nothing is saved until you say so.</div>
             </div>
           </div>
-          <div style={{ padding: '24px 26px 0', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '24px var(--pad-x) 0', display: 'flex', flexDirection: 'column' }}>
             {items.map((it, i) => (
               <div key={i} style={{ display: 'flex', gap: 14, padding: '16px 0', borderBottom: '1px solid var(--dark-divider)' }}>
                 <div style={{ width: 3, borderRadius: 2, background: typeColor(it) }} />
@@ -299,7 +299,7 @@ export function OriVoice() {
             ))}
           </div>
           {assumption && (
-            <div style={{ padding: '18px 26px 0', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+            <div style={{ padding: '18px var(--pad-x) 0', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
               <Ori size={22} style={{ marginTop: 1 }} />
               <div style={{ fontSize: 13, color: 'var(--muted-3)', lineHeight: 1.6 }}>{assumption}</div>
             </div>
