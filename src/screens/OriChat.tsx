@@ -23,7 +23,9 @@ export function OriChat() {
   )
   const [text, setText] = useState('')
   const end = useRef<HTMLDivElement>(null)
-  useEffect(() => end.current?.scrollIntoView({ behavior: 'smooth' }), [chat])
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chat])
 
   const send = (msg: string) => {
     const t = msg.trim()

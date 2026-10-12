@@ -68,7 +68,9 @@ export function Layout() {
     document.documentElement.style.background = dark ? 'var(--ink-dark-bg)' : ''
   }, [dark])
 
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   if (pathname === '/') return <><Outlet /><Toast withBar={false} /></>
   if (!session) return <Navigate to="/" replace />
