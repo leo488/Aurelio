@@ -86,7 +86,9 @@ const smtp = SMTP_USER && SMTP_PASS
 if (SMTP_PASS) mask(SMTP_PASS)
 let emailMode = 'code'
 try {
-  await api('PATCH', `/projects/${REF}/config/auth`, { ...base, ...smtp, ...template })
+  // The sender goes in first: the plan allows a custom template only once it has its own sender.
+  if (SMTP_USER) await api('PATCH', `/projects/${REF}/config/auth`, { ...base, ...smtp })
+  await api('PATCH', `/projects/${REF}/config/auth`, { ...base, ...template })
 } catch (e) {
   if (!/template/i.test(String(e))) throw e
   await api('PATCH', `/projects/${REF}/config/auth`, base)
