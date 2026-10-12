@@ -40,6 +40,16 @@ await sql(`insert into public.members (email, role) values (${lit(EMAILS.leo)}, 
   on conflict (role) do update set email = excluded.email;`)
 console.log('  ok')
 
+// Bump to empty everyone's data once (accounts and settings stay). Must match DATA_EPOCH in src/boot.ts.
+const DATA_EPOCH = '2026-10-12'
+const [done] = await sql(`select value from public.server_config where key = 'data_epoch'`)
+if (done?.value !== DATA_EPOCH) {
+  await sql(`truncate public.routine_completions, public.routines, public.tasks, public.notifications, public.activity,
+    public.settings, public.daily_status, public.scheduled_pushes, public.push_subscriptions, public.pin_attempts, public.profiles;
+    insert into public.server_config (key, value) values ('data_epoch', ${lit(DATA_EPOCH)}) on conflict (key) do update set value = excluded.value;`)
+  console.log(`  wiped all data (epoch ${DATA_EPOCH})`)
+}
+
 step('API keys')
 const keys = await api('GET', `/projects/${REF}/api-keys?reveal=true`)
 const pick = (name) => keys.find((k) => k.name === name)?.api_key
