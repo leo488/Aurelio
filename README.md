@@ -67,7 +67,7 @@ The Pages workflow sets up the backend on every deploy once these repository sec
 | --- | --- |
 | `LEO_EMAIL`, `SONIYA_EMAIL` | The two members' addresses. |
 | `SUPABASE_ACCESS_TOKEN` | supabase.com/dashboard/account/tokens (starts with `sbp_`). |
-| `ANTHROPIC_API_KEY` | console.anthropic.com. Used only by the `ori` edge function. |
+| `ANTHROPIC_API_KEY` | console.anthropic.com. Optional: turns on the AI in the `ori` edge function. |
 
 `scripts/supabase-setup.mjs` applies `supabase/schema.sql` and `supabase/push.sql`, fills `members`, creates both
 users, turns off sign-ups, sets the code email template, creates the VAPID keys, PIN pepper and cron secret, and

@@ -1,7 +1,7 @@
 # Sets up the Supabase backend (database, sign-in, push and AI) and publishes the app to GitHub Pages
 # (gh-pages branch), so it can be installed from Chrome. The backend step runs once the repository
-# secrets LEO_EMAIL, SONIYA_EMAIL, SUPABASE_ACCESS_TOKEN and ANTHROPIC_API_KEY exist; until then the
-# app is built in on-device mode.
+# secrets LEO_EMAIL, SONIYA_EMAIL and SUPABASE_ACCESS_TOKEN exist (ANTHROPIC_API_KEY turns on the AI);
+# until then the app is built in on-device mode.
 name: Deploy to GitHub Pages
 
 on:
@@ -34,7 +34,7 @@ jobs:
       - id: check
         run: |
           missing=""
-          for k in SUPABASE_ACCESS_TOKEN LEO_EMAIL SONIYA_EMAIL ANTHROPIC_API_KEY; do
+          for k in SUPABASE_ACCESS_TOKEN LEO_EMAIL SONIYA_EMAIL; do
             [ -n "${!k}" ] || missing="$missing $k"
           done
           if [ -n "$missing" ]; then

@@ -1,5 +1,5 @@
 // Sets up (or updates) the Supabase project from GitHub Actions. Safe to run on every deploy.
-// Needs: SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN, LEO_EMAIL, SONIYA_EMAIL, ANTHROPIC_API_KEY.
+// Needs: SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN, LEO_EMAIL, SONIYA_EMAIL. ANTHROPIC_API_KEY is optional.
 // Writes the project's public anon key to $GITHUB_OUTPUT for the app build. Never prints secrets.
 import { randomBytes } from 'node:crypto'
 import { appendFileSync, readFileSync } from 'node:fs'
@@ -13,7 +13,7 @@ const env = (k) => {
 const REF = env('SUPABASE_PROJECT_REF')
 const TOKEN = env('SUPABASE_ACCESS_TOKEN')
 const EMAILS = { leo: env('LEO_EMAIL').toLowerCase(), sonia: env('SONIYA_EMAIL').toLowerCase() }
-const ANTHROPIC = env('ANTHROPIC_API_KEY')
+const ANTHROPIC = process.env.ANTHROPIC_API_KEY
 const URL_ = `https://${REF}.supabase.co`
 const SITE = process.env.SITE_URL ?? 'https://leo488.github.io/Aurelio/'
 
@@ -86,7 +86,9 @@ step('Server secrets')
 const have = new Set((await api('GET', `/projects/${REF}/secrets`)).map((s) => s.name))
 const [cfg] = [await sql(`select key, value from public.app_config union all select key, value from public.server_config`)]
 const value = (k) => cfg.find((r) => r.key === k)?.value
-const secrets = [{ name: 'ANTHROPIC_API_KEY', value: ANTHROPIC }, { name: 'VAPID_SUBJECT', value: `mailto:${EMAILS.leo}` }]
+const secrets = [{ name: 'VAPID_SUBJECT', value: `mailto:${EMAILS.leo}` }]
+if (ANTHROPIC) secrets.push({ name: 'ANTHROPIC_API_KEY', value: ANTHROPIC })
+else console.log('  no ANTHROPIC_API_KEY; Ori stays on the on-device parser')
 if (!have.has('PIN_PEPPER')) secrets.push({ name: 'PIN_PEPPER', value: randomBytes(32).toString('hex') })
 if (!have.has('VAPID_PRIVATE_KEY') || !value('vapid_public_key')) {
   const v = webpush.generateVAPIDKeys()

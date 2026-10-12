@@ -5,7 +5,9 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.133.0'
 import { cors, json, memberFrom } from '../_shared/common.ts'
 
-const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') ?? '' })
+const KEY = Deno.env.get('ANTHROPIC_API_KEY')
+// Without a key the app falls back to its on-device parser.
+const client = KEY ? new Anthropic({ apiKey: KEY }) : null
 const MODEL = 'claude-opus-5-5'
 
 const str = { type: ['string', 'null'] }
@@ -80,7 +82,7 @@ async function ask(system: string, user: string, schema: object) {
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
   }
-  const res = await client.beta.messages.create(params)
+  const res = await client!.beta.messages.create(params)
   if (res.stop_reason === 'refusal') throw new Error('refused')
   const text = res.content.find((b) => b.type === 'text')
   if (!text || text.type !== 'text') throw new Error('empty')
@@ -91,6 +93,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   const me = await memberFrom(req)
   if (!me) return json({ error: 'not-allowed' }, 401)
+  if (!client) return json({ error: 'ai-off' }, 503)
   let body: Record<string, unknown>
   try {
     body = await req.json()

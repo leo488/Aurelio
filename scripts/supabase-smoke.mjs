@@ -64,10 +64,12 @@ check('due reminders are processed', !!row[0]?.sent_at, JSON.stringify(row))
 await rest(`scheduled_pushes?key=eq.smoke|${id}`, token, { method: 'DELETE' })
 
 // The AI, both ways.
-const items = await fn('ori', { transcript: 'Dentist tomorrow at 3pm', now: '2026-10-12 Monday 21:00', today: '2026-10-12', routines: [] }, token).then((r) => r.json())
-check('Ori turns speech into items', Array.isArray(items.items) && items.items.length > 0, JSON.stringify(items).slice(0, 200))
-const draft = await fn('ori', { mode: 'routine', prompt: 'Every morning I pray, drink water, do 20 minutes of exercise and shower' }, token).then((r) => r.json())
-check('Ori drafts a routine', Array.isArray(draft.routine?.steps) && draft.routine.steps.length > 1, JSON.stringify(draft).slice(0, 200))
+if (process.env.ANTHROPIC_API_KEY) {
+  const items = await fn('ori', { transcript: 'Dentist tomorrow at 3pm', now: '2026-10-12 Monday 21:00', today: '2026-10-12', routines: [] }, token).then((r) => r.json())
+  check('Ori turns speech into items', Array.isArray(items.items) && items.items.length > 0, JSON.stringify(items).slice(0, 200))
+  const draft = await fn('ori', { mode: 'routine', prompt: 'Every morning I pray, drink water, do 20 minutes of exercise and shower' }, token).then((r) => r.json())
+  check('Ori drafts a routine', Array.isArray(draft.routine?.steps) && draft.routine.steps.length > 1, JSON.stringify(draft).slice(0, 200))
+} else console.log('- Ori AI skipped (no ANTHROPIC_API_KEY)')
 
 // Leave sign-in as it was: the code above created a session, which is harmless; drop it.
 await fetch(`${URL_}/auth/v1/logout?scope=local`, { method: 'POST', headers: { apikey: ANON, Authorization: `Bearer ${token}` } })
