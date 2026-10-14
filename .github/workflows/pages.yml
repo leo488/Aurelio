@@ -1,0 +1,109 @@
+# Sets up the Supabase backend (database, sign-in, push and AI) and publishes the app to GitHub Pages
+# (gh-pages branch), so it can be installed from Chrome. The backend step runs once the repository
+# secrets LEO_EMAIL, SONIYA_EMAIL and SUPABASE_ACCESS_TOKEN exist (ANTHROPIC_API_KEY turns on the AI);
+# until then the app is built in on-device mode.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [claude/design-v2-llqmbc]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SUPABASE_PROJECT_REF: ztfeeixhwszajlgfvfli
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      LEO_EMAIL: ${{ secrets.LEO_EMAIL }}
+      SONIYA_EMAIL: ${{ secrets.SONIYA_EMAIL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+    steps:
+      - id: check
+        run: |
+          missing=""
+          for k in SUPABASE_ACCESS_TOKEN LEO_EMAIL SONIYA_EMAIL; do
+            [ -n "${!k}" ] || missing="$missing $k"
+          done
+          if [ -n "$missing" ]; then
+            echo "::notice::Backend skipped; missing repository secrets:$missing"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.ready == 'true'
+        uses: actions/checkout@v4
+      - if: steps.check.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: steps.check.outputs.ready == 'true'
+        run: npm install --no-save --no-package-lock web-push@3.6.7
+      - id: setup
+        if: steps.check.outputs.ready == 'true'
+        run: node scripts/supabase-setup.mjs
+      - if: steps.check.outputs.ready == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy functions
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          supabase functions deploy auth --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
+          supabase functions deploy push-dispatch --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
+          supabase functions deploy ori --project-ref "$SUPABASE_PROJECT_REF" --use-api
+      - name: Check the live backend
+        if: steps.check.outputs.ready == 'true'
+        run: node scripts/supabase-smoke.mjs
+
+  deploy:
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Public key
+        if: needs.backend.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/supabase-anon.mjs
+      - name: Build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+          READY: ${{ needs.backend.outputs.ready }}
+          LEO_EMAIL: ${{ secrets.LEO_EMAIL }}
+          SONIYA_EMAIL: ${{ secrets.SONIYA_EMAIL }}
+        run: |
+          if [ "$READY" = "true" ]; then
+            export VITE_SUPABASE_URL="https://$SUPABASE_PROJECT_REF.supabase.co"
+            # Only a masked hint ships in the public app ("l••••@gmail.com"); sign-in looks the address up on the server.
+            hint() { node -e 'const [n,d]=process.argv[1].split("@");console.log(n[0]+"•".repeat(Math.max(2,n.length-1))+"@"+d)' "$1"; }
+            export VITE_LEO_EMAIL="$(hint "$LEO_EMAIL")"
+            export VITE_SONIA_EMAIL="$(hint "$SONIYA_EMAIL")"
+          fi
+          npm run build
+      # Deep links (e.g. /Aurelio/today) load the app instead of a Pages 404.
+      - run: cp dist/index.html dist/404.html && touch dist/.nojekyll
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages

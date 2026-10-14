@@ -28,3 +28,6 @@ export const firstDate = (items: OriItem[]) => dateOf(items.find((i) => i.start 
 
 /** "Create a 30-minute morning routine" is a routine request, not a task. */
 export const isRoutineRequest = (text: string) => /\b(create|make|build|design|plan|give me|set up)\b.*\broutine\b/i.test(text)
+
+/** "Move my morning routine to 7": an edit to an existing routine rather than a new one. */
+export const isRoutineEdit = (text: string) => /\b(move|shift|push|change)\b.*\bto\b/i.test(text)

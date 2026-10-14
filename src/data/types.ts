@@ -92,9 +92,35 @@ export interface RoutineCompletion {
   updatedAt: string
 }
 
-// ─── Sonia: tasks and calendar ───────────────────────────────────────────────
+// ─── Soniya: tasks and calendar ───────────────────────────────────────────────
 
 export type Priority = 'low' | 'medium' | 'high'
+
+export interface GoalStep {
+  id: string
+  title: string
+  done: boolean
+}
+
+/** One goal for an ISO week ("2026-W42"). Private to its owner. */
+export interface WeeklyGoal {
+  id: string
+  userId: string
+  week: string
+  title: string
+  done: boolean
+  doneAt?: string
+  /** Order in the list, smallest first. */
+  position: number
+  /** Smaller pieces of the goal; ticking them all ticks the goal. */
+  steps?: GoalStep[]
+  /** A routine that feeds this goal; the week page shows how often it was done. */
+  routineId?: string
+  /** The week's one top priority, shown above everything else. */
+  priority?: boolean
+  createdAt: string
+  updatedAt: string
+}
 
 export interface Task {
   id: string
@@ -123,9 +149,12 @@ export interface Settings {
   id: string
   userId: string
   notif: {
-    /** Routine start reminders (Leo) or task reminders (Sonia). */
+    /** Routine start reminders (Leo) or task reminders (Soniya). */
     reminders: boolean
+    /** Deadline and overdue warnings (Soniya); the 20:00 streak-at-risk check (Leo). */
     deadlines: boolean
+    /** Soniya's 08:00 summary of the day. Missing means on. */
+    summary?: boolean
     partner: boolean
     quiet: { on: boolean; from: string; to: string }
   }
@@ -157,7 +186,7 @@ export interface AppNotification {
   createdAt: string
 }
 
-export type ActivityKind = 'routine-done' | 'streak' | 'day-planned' | 'day-done' | 'cheer' | 'nudge'
+export type ActivityKind = 'routine-done' | 'streak' | 'day-planned' | 'day-done' | 'cheer' | 'nudge' | 'week-goals'
 
 /** What the other person can see happened. Never carries item details. */
 export interface Activity {

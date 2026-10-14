@@ -13,7 +13,7 @@ const env = import.meta.env
 
 export const PROFILES: Record<Role, Profile> = {
   leo: { role: 'leo', name: 'Leo', email: (env.VITE_LEO_EMAIL as string | undefined)?.trim() || 'leo@example.com' },
-  sonia: { role: 'sonia', name: 'Sonia', email: (env.VITE_SONIA_EMAIL as string | undefined)?.trim() || 'sonia@example.com' },
+  sonia: { role: 'sonia', name: 'Soniya', email: (env.VITE_SONIA_EMAIL as string | undefined)?.trim() || 'sonia@example.com' },
 }
 
 export const ROLES: Role[] = ['leo', 'sonia']

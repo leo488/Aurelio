@@ -8,21 +8,22 @@ import { logicalToday } from '../lib/date'
 import { useReminders } from '../lib/reminders'
 import { soniaStats } from '../lib/stats'
 import { dayStreak } from '../lib/streak'
+import { usePushSync } from '../services/push'
 import { BottomBar, type Tab } from './BottomBar'
 import { Toast } from './Toast'
 
-const HIDE_BAR = ['/', '/run', '/run/done', '/ori', '/ori/chat', '/milestone', '/routines/new', '/tasks/new', '/tasks/:id']
+const HIDE_BAR = ['/', '/run', '/run/done', '/ori', '/ori/chat', '/milestone', '/routines/new', '/routines/:id/edit', '/tasks/new', '/tasks/:id']
 const DARK = ['/run', '/run/done', '/ori', '/milestone']
 
 const TAB_FOR: [string, Tab][] = [
-  ['/today', 'today'], ['/welcome', 'today'], ['/missed', 'today'],
+  ['/today', 'today'], ['/welcome', 'today'], ['/week', 'week'],
   ['/routines', 'routines'], ['/routines/:id', 'routines'],
-  ['/profile', 'progress'], ['/streak', 'progress'], ['/settings', 'progress'],
-  ['/calendar', 'calendar'], ['/calendar/:day', 'calendar'], ['/tasks', 'tasks'],
-  ['/together', 'together'],
+  ['/streak', 'streaks'], ['/missed', 'streaks'],
+  ['/profile', 'you'], ['/notifications', 'you'], ['/notifications/settings', 'you'],
+  ['/calendar', 'calendar'], ['/tasks', 'upcoming'],
 ]
 
-/** Publish today's numbers (never the items) so the other person's Together screen can show them. */
+/** Publish today's numbers (never the items) so the other person's strip and profile can show them. */
 function useStatusPublisher() {
   const last = useRef('')
   const me = useData((s) => s.me)
@@ -58,17 +59,29 @@ export function Layout() {
   const status = useData((s) => s.status)
   const me = useData((s) => s.me)
   useReminders(me)
+  usePushSync(me)
   useStatusPublisher()
 
   const dark = DARK.includes(pathname)
   useEffect(() => {
-    // The status bar takes the colour of the screen under it, read from the theme tokens.
-    const token = getComputedStyle(document.documentElement).getPropertyValue(dark ? '--ink-dark-bg' : '--paper').trim()
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', token)
+    // The status bar takes the colour at the top of the screen under it, so the app runs edge to edge.
+    const css = getComputedStyle(document.documentElement)
+    const paint = () => {
+      const bg = document.querySelector<HTMLElement>('main.screen')?.style.background ?? ''
+      const m = bg.match(/--(wash|hero)-([a-z]+)/)
+      const token = dark ? '--ink-dark-bg' : m ? (m[1] === 'wash' ? `--bar-${m[2]}` : `--hero-${m[2]}`) : '--paper'
+      const color = css.getPropertyValue(token).trim() || css.getPropertyValue('--paper').trim()
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+    }
+    paint()
+    const raf = requestAnimationFrame(paint)
     document.documentElement.style.background = dark ? 'var(--ink-dark-bg)' : ''
-  }, [dark])
+    return () => cancelAnimationFrame(raf)
+  }, [dark, pathname])
 
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   if (pathname === '/') return <><Outlet /><Toast withBar={false} /></>
   if (!session) return <Navigate to="/" replace />
@@ -95,7 +108,7 @@ export function Layout() {
   )
 }
 
-/** Keeps each experience to its owner: Sonia never lands on Leo's routine screens and vice versa. */
+/** Keeps each experience to its owner: Soniya never lands on Leo's routine screens and vice versa. */
 export function Only({ role, children }: { role: Role; children: React.ReactNode }) {
   const me = useData((s) => s.me)
   if (me && me.role !== role) return <Navigate to="/today" replace />

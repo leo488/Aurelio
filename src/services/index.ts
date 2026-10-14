@@ -1,5 +1,5 @@
 import { useSupabase } from '../config'
-import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, Settings, Task, User } from '../data/types'
+import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, Settings, Task, User, WeeklyGoal } from '../data/types'
 import type { AuthService, Backend } from './backend'
 import { localAuth } from './local/localAuth'
 import { localBackend } from './local/localBackend'
@@ -51,6 +51,12 @@ export const taskService = {
   createTask: (t: Task) => backend.tasks.put(t),
   updateTask: (t: Task) => backend.tasks.put(t),
   deleteTask: (id: string) => backend.tasks.remove(id),
+}
+
+export const goalService = {
+  getGoals: (userId: string) => backend.goals.list({ userId }),
+  saveGoal: (g: WeeklyGoal) => backend.goals.put(g),
+  deleteGoal: (id: string) => backend.goals.remove(id),
 }
 
 export const notificationService = {

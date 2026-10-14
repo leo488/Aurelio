@@ -1,18 +1,16 @@
 import { useNavigate } from 'react-router-dom'
+import { Ember } from '../components/Ember'
 import { flash } from '../components/Toast'
-import { useMe } from '../data/session'
+import { FlatButton, Label } from '../components/ui'
 import { routineTime } from '../data/select'
 import { laterStart, useData } from '../data/store'
-import { addDays, eyebrowDate, logicalToday, looseTime } from '../lib/date'
-import { greeting } from '../lib/greeting'
-import { stepLabel } from '../lib/labels'
+import { addDays, logicalToday } from '../lib/date'
 import { completionOf, routineStreak, stepsOn } from '../lib/streak'
 import { numberWord, numberWordLower } from '../lib/words'
 
 /** After a streak breaks: kind words, a back-fill, and a suggestion to lighten the routine. */
 export function Missed() {
   const data = useData()
-  const { name } = useMe()
   const navigate = useNavigate()
   const today = logicalToday()
   const mine = data.routines.filter((r) => r.active).map((r) => ({ r, st: routineStreak(r, data.completions, today) }))
@@ -47,38 +45,38 @@ export function Missed() {
   return (
     <main className="screen" style={{ background: 'var(--wash-missed)' }}>
       <div className="pad top">
-        <div className="eyebrow">{eyebrowDate(today)}</div>
-        <h1 className="title-30" style={{ marginTop: 4 }}>{greeting()}, {name}</h1>
-      </div>
-      <div className="pad" style={{ paddingTop: 24 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--clay)', letterSpacing: '.06em' }}>{r.name.toUpperCase()} · STREAK ENDED AT {b.value}</div>
-        <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.25, marginTop: 10 }}>
+        <Ember streak={0} size={58} />
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--clay)', letterSpacing: '.06em', marginTop: 16 }}>{r.name.toUpperCase()} · STREAK ENDED AT {b.value}</div>
+        <div className="display" style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.22, marginTop: 10 }}>
           {b.date === addDays(today, -1) ? 'Yesterday' : 'That day'} came apart. It happens.
         </div>
         <div style={{ fontSize: 14, color: 'var(--chip-text)', lineHeight: 1.65, marginTop: 10 }}>
           {numberWord(b.done)} of {numberWordLower(b.total)} steps got done. Your {Math.max(st.longest, b.value)}-day record still stands, and today is day one of the next run.
         </div>
         <div style={{ display: 'flex', gap: 9, marginTop: 20 }}>
-          <button type="button" className="btn btn-ink" style={{ flex: 1, borderRadius: 16 }} onClick={() => navigate('/today')}>Start today</button>
-          <button type="button" className="btn btn-chip" style={{ flex: 1, borderRadius: 16 }} onClick={backfill}>Back-fill it</button>
+          <FlatButton tone="ink" style={{ padding: 15, fontSize: 14.5 }} onClick={() => navigate('/today')}>Start fresh</FlatButton>
+          <FlatButton style={{ padding: 15, fontSize: 14.5 }} onClick={backfill}>I did it, log it</FlatButton>
         </div>
+        <div style={{ fontSize: 12, color: 'var(--muted-3)', marginTop: 10, lineHeight: 1.5 }}>Logging late is allowed once a week and is marked as late in your history.</div>
       </div>
       <div className="pad" style={{ paddingTop: 28 }}>
-        <div className="label">Maybe it was too much</div>
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 8 }}>
+        <Label>Maybe it was too much</Label>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 6 }}>
           {worst && (
-            <button type="button" className="setting-row" onClick={() => { data.deleteStep(r.id, worst.id); navigate(`/routines/${r.id}`); flash(`${r.name} is lighter now`) }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, textAlign: 'left' }}>Drop “{stepLabel(worst)}” from {r.name}</div>
+            <button type="button" onClick={() => { data.deleteStep(r.id, worst.id); navigate(`/routines/${r.id}`); flash(`${r.name} is lighter now`) }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '16px 0', borderBottom: '1px solid var(--divider)', width: '100%', textAlign: 'left' }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700 }}>Drop “{worst.title}” from {r.name}</div>
               <div style={{ fontSize: 13, color: 'var(--gold-text)', fontWeight: 800 }}>Do it</div>
             </button>
           )}
-          <button type="button" className="setting-row last" onClick={() => { data.updateRoutine(r.id, { scheduledTime: newTime }); navigate(`/routines/${r.id}`); flash(`${r.name} now starts at ${looseTime(newTime)}`) }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, textAlign: 'left' }}>Move start to {looseTime(newTime)}</div>
+          <button type="button" onClick={() => { data.updateRoutine(r.id, { scheduledTime: newTime }); navigate(`/routines/${r.id}`); flash(`${r.name} now starts at ${newTime}`) }}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '16px 0', borderBottom: '1px solid var(--divider)', width: '100%', textAlign: 'left' }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700 }}>Move the start to {newTime}</div>
             <div style={{ fontSize: 13, color: 'var(--gold-text)', fontWeight: 800 }}>Do it</div>
           </button>
         </div>
         <div style={{ fontSize: 12.5, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 14 }}>
-          Suggested because that step is missed most often. Ori only offers this after a break, never during a run.
+          Suggested because it’s the step you skip most. Ori only offers this after a break, never during a run.
         </div>
       </div>
     </main>

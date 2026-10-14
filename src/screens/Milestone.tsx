@@ -25,21 +25,22 @@ export function Milestone() {
 
   const tell = () => {
     data.addActivity({ kind: 'streak', text: `reached ${n} ${routinePlural(r.name)} in a row`, value: n })
-    navigate('/together')
-    flash(partner ? `${partnerName} will see it on Together` : 'Saved to your activity')
+    const sent = !!partner && data.sendNudge(`${n} ${routinePlural(r.name)} in a row`)
+    navigate('/today')
+    flash(sent ? `Sent to ${partnerName}` : `${partnerName} hasn’t signed in yet`)
   }
 
   return (
     <main className="screen dark no-bar" style={{ background: 'var(--dark-milestone)' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 42px', textAlign: 'center' }}>
-        <Ember streak={n} size={176} flicker hero />
-        <div className="display" style={{ fontSize: 64, fontWeight: 800, letterSpacing: '-.05em', lineHeight: 1, marginTop: 34 }}>{n}</div>
-        <div className="display" style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-.025em', marginTop: 10 }}>{routinePlural(r.name)} in a row</div>
+        <Ember streak={Math.max(25, n)} size={176} flicker />
+        <div className="display" style={{ fontSize: 64, fontWeight: 800, letterSpacing: '-.05em', lineHeight: 1, marginTop: 32 }}>{n}</div>
+        <div className="display" style={{ fontSize: 25, fontWeight: 600, letterSpacing: '-.025em', marginTop: 10 }}>{routinePlural(r.name)} in a row</div>
         <div style={{ fontSize: 14.5, color: 'var(--muted-back)', marginTop: 14, lineHeight: 1.6 }}>Since {since}. {record}</div>
       </div>
       <div className="pad dark-bottom" style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
         <button type="button" className="btn-gold" onClick={tell}>Tell {partnerName}</button>
-        <button type="button" className="btn-dark-text" onClick={() => navigate('/today')}>Close</button>
+        <button type="button" className="btn-dark-text" onClick={() => navigate('/streak')}>Close</button>
       </div>
     </main>
   )

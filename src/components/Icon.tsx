@@ -1,4 +1,4 @@
-export type IconName = 'sun' | 'moon' | 'dumbbell' | 'book' | 'calendar' | 'list' | 'bell' | 'together' | 'plus' | 'gear' | 'flame'
+export type IconName = 'sun' | 'moon' | 'dumbbell' | 'book' | 'calendar' | 'list' | 'bell' | 'together' | 'plus' | 'gear' | 'flame' | 'sunset' | 'leaf' | 'focus' | 'user' | 'lock' | 'clock'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   sun: (
@@ -43,6 +43,42 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  sunset: (
+    <>
+      <path d="M4 18h16M7 14.5a5 5 0 0 1 10 0" />
+      <path d="M12 5v3M5.5 8.5l1.6 1.6M18.5 8.5l-1.6 1.6" />
+    </>
+  ),
+  leaf: (
+    <>
+      <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14Z" />
+      <path d="M5 19l7-7" />
+    </>
+  ),
+  focus: (
+    <>
+      <circle cx="12" cy="12" r="7.5" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  user: (
+    <>
+      <circle cx="12" cy="8.5" r="3.8" />
+      <path d="M4.8 20c.9-3.8 3.7-5.8 7.2-5.8s6.3 2 7.2 5.8" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="10.5" width="14" height="9.5" rx="3" />
+      <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4.5l3 1.8" />
+    </>
+  ),
   // Same silhouette as the 24px ember, as a line icon for the Progress tab.
   flame: <path d="M12 3.4c3.2 3.4 5.6 6 5.6 9.2A5.6 5.6 0 0 1 12 18.2a5.6 5.6 0 0 1-5.6-5.6c0-3.2 2.4-5.8 5.6-9.2Z" />,
   gear: (
@@ -62,4 +98,3 @@ export function Icon({ name, size = 24, color = 'var(--ink)', stroke = 1.8, styl
 }
 
 /** The colour each routine icon wears in lists (sun gold, moon iris, gym olive, study muted). */
-export const ROUTINE_TINT: Record<string, string> = { sun: 'var(--gold)', moon: 'var(--iris)', dumbbell: 'var(--olive)', book: 'var(--muted-2)' }

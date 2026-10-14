@@ -71,6 +71,12 @@
   --heat-3: #a27a35;
   --heat-4: #d8ae5e;
   --app-mark: #1c2026;
+  --heat-off: #1c1f24;
+  --arrow-off: #30353c;
+  --ember-warm: #dcc38a;
+  --ember-core: #f7ebd3;
+  --check-mark: #eeebe6;
+  --input-line: #23272d;
 
   /* The screens that were always dark (runner, done, milestone, Ori voice). */
   --ink-dark-bg: #0a0b0e;
@@ -87,15 +93,15 @@
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
   --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  --radius-card: 26px;
-  --radius-sheet: 30px;
-  --radius-panel: 28px;
-  --radius-button: 18px;
-  --radius-tile: 16px;
+  --radius-card: 12px;
+  --radius-sheet: 20px;
+  --radius-panel: 14px;
+  --radius-button: 12px;
+  --radius-tile: 10px;
   --radius-pill: 99px;
 
-  --pad-x: 26px;
-  --app-max: 390px;
+  --pad-x: 18px;
+  --app-max: 480px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --content-top: calc(var(--safe-top) + 16px);
@@ -116,6 +122,15 @@
   --glow-avatar: drop-shadow(0 10px 30px rgba(199, 154, 74, .25));
 
   /* Header auras */
+  /* Status-bar colours: what each wash looks like just under the phone's status bar. */
+  --bar-default: #202023;
+  --bar-streak: #272524;
+  --bar-login: #2d271c;
+  --bar-pin: #26221a;
+  --bar-settings: #171716;
+  --bar-together: var(--bar-settings);
+  --bar-empty: var(--bar-settings);
+  --bar-missed: #1c1719;
   --wash-default: radial-gradient(110% 38% at 92% -6%, rgba(199, 154, 74, .20) 0%, rgba(199, 154, 74, 0) 62%), linear-gradient(180deg, #151820 0%, #0e1013 42%);
   --wash-streak: radial-gradient(110% 38% at 20% -6%, rgba(199, 154, 74, .22) 0%, rgba(199, 154, 74, 0) 62%), linear-gradient(180deg, #151820 0%, #0e1013 42%);
   --wash-login: radial-gradient(90% 45% at 50% -8%, rgba(199, 154, 74, .24) 0%, rgba(199, 154, 74, 0) 66%), #0e1013;
@@ -198,6 +213,12 @@
   --heat-3: #c9a869;
   --heat-4: #a97c34;
   --app-mark: #1a1714;
+  --heat-off: #ebe4d8;
+  --arrow-off: #d8d0c4;
+  --ember-warm: #dcc38a;
+  --ember-core: #f7ebd3;
+  --check-mark: #ffffff;
+  --input-line: #e7e0d5;
   --ink-dark-bg: #17150f;
   --on-dark: #f6f1e9;
   --dark-outline: #33302a;
@@ -217,6 +238,14 @@
   --glow-ori: none;
   --glow-ember: none;
   --glow-avatar: none;
+  --bar-default: #f1e4cf;
+  --bar-streak: #f1e4cf;
+  --bar-login: #f0e2cb;
+  --bar-pin: #f0e2cb;
+  --bar-settings: #efe4d2;
+  --bar-together: #f2e7d2;
+  --bar-empty: #ede3d3;
+  --bar-missed: #e9e2d6;
   --wash-default: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 34%);
   --wash-streak: linear-gradient(180deg, #f1e4cf 0%, #f6f1e9 32%);
   --wash-login: linear-gradient(180deg, #f0e2cb 0%, #f6f1e9 46%);

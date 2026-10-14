@@ -1,10 +1,10 @@
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Ember } from '../components/Ember'
-import { Icon } from '../components/Icon'
 import { Ori } from '../components/Ori'
 import { useMe } from '../data/session'
 import { useData } from '../data/store'
-import { eyebrowDate, logicalToday } from '../lib/date'
+import { logicalToday } from '../lib/date'
+import { headerDate } from '../components/ui'
 import { greeting } from '../lib/greeting'
 
 /** Leo's first day, before anything is lit. */
@@ -17,18 +17,16 @@ export function EmptyDay() {
   return (
     <main className="screen" style={{ background: 'var(--wash-empty)' }}>
       <div className="pad top">
-        <div className="eyebrow">{eyebrowDate(logicalToday())}</div>
-        <h1 className="title-30" style={{ marginTop: 4 }}>{greeting()}, {name}</h1>
+        <div className="eyebrow">{headerDate(logicalToday())}</div>
+        <h1 className="display" style={{ fontSize: 29, fontWeight: 700, letterSpacing: '-.03em', lineHeight: 1.1, margin: '3px 0 0' }}>{greeting()}, {name}</h1>
       </div>
-      <div style={{ padding: '52px 32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-        <Ember streak={0} size={76} coldColor="var(--ember-cold)" />
-        <div className="display" style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.028em', marginTop: 24 }}>Nothing lit yet</div>
-        <div style={{ fontSize: 14.5, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 10 }}>Build your first routine by hand, or tell Ori what you want and review the draft.</div>
+      <div style={{ padding: '60px 36px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        <Ember streak={0} size={64} />
+        <div className="display" style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-.025em', marginTop: 18 }}>No routines yet</div>
+        <div style={{ fontSize: 14, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 8 }}>Build one by hand, or tap Ori and say what you want.</div>
       </div>
-      <div className="pad" style={{ paddingTop: 36, display: 'flex', flexDirection: 'column' }}>
-        <button type="button" className="list-row" style={{ padding: '16px 0', borderBottom: '1px solid var(--divider)' }} onClick={() => navigate('/routines/new')}>
-          <Icon name="plus" size={21} /><div style={{ fontSize: 15, fontWeight: 700 }}>Create a routine</div>
-        </button>
+      <div className="pad" style={{ paddingTop: 20, display: 'flex', flexDirection: 'column' }}>
+        <button type="button" onClick={() => navigate('/routines/new')} style={{ alignSelf: 'center', background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800, padding: '14px 22px', borderRadius: 12 }}>Create a routine</button>
         <button type="button" className="ori-card" style={{ marginTop: 16 }} onClick={() => navigate('/routines/new', { state: { ask: true } })}>
           <Ori size={26} />
           <div style={{ fontSize: 13.5, color: 'var(--chip-suggest-text)', lineHeight: 1.45 }}>“Create a 30-minute morning routine for me.”</div>

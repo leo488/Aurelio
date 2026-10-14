@@ -22,8 +22,8 @@ async function show(title: string, body: string | undefined, tag: string) {
   if (!notificationsSupported() || Notification.permission !== 'granted') return
   try {
     const reg = await navigator.serviceWorker?.getRegistration()
-    if (reg) await reg.showNotification(title, { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' })
-    else new Notification(title, { body, tag, icon: '/icons/icon-192.png' })
+    if (reg) await reg.showNotification(title, { body, tag, icon: `${import.meta.env.BASE_URL}icons/icon-192.png`, badge: `${import.meta.env.BASE_URL}icons/icon-192.png` })
+    else new Notification(title, { body, tag, icon: `${import.meta.env.BASE_URL}icons/icon-192.png` })
   } catch {
     /* the inbox still has it */
   }
@@ -71,15 +71,27 @@ export function checkReminders(user: User, now = new Date()) {
         }
       }
     }
-    // Evening catch-up when routines are still open.
+    // Streak at risk: once, at 20:00, when routines are still open.
     const day = dayProgress(s, today)
     const left = day.total - day.done
-    if (settings.notif.reminders && mins >= 20 * 60 && left > 0) {
+    if (settings.notif.deadlines && mins >= 20 * 60 && left > 0) {
       fire(`catchup|${today}`, { kind: 'catchup', title: `${left} routine${left === 1 ? '' : 's'} left today`, body: `${user.name}, there’s still time.` })
     }
   }
 
-  // Task reminders and deadline warnings (anyone with tasks; in practice Sonia).
+  // Soniya's morning summary: today's plan and anything overdue.
+  if (user.role === 'sonia' && settings.notif.summary !== false && mins >= 8 * 60 && mins < 12 * 60) {
+    const planned = s.tasks.filter((t) => t.date === today && !t.completed).length
+    const overdue = s.tasks.filter((t) => !t.completed && t.date && t.date < today).length
+    if (planned || overdue) {
+      fire(`summary|${today}`, {
+        kind: 'task', title: planned ? `${planned} task${planned === 1 ? '' : 's'} planned today` : 'Nothing planned today yet',
+        body: overdue ? `${overdue} overdue · Morning summary` : 'Morning summary',
+      })
+    }
+  }
+
+  // Task reminders and deadline warnings (anyone with tasks; in practice Soniya).
   for (const t of s.tasks) {
     if (t.completed) continue
     if (settings.notif.reminders && t.reminderAt && t.reminderAt.slice(0, 10) <= today && toDate(t.reminderAt) <= now && t.reminderAt.slice(0, 10) >= addDays(today, -1)) {
@@ -87,6 +99,9 @@ export function checkReminders(user: User, now = new Date()) {
         kind: 'task', title: t.startTime && t.date === today ? `${t.title} at ${t.startTime}` : t.title,
         body: t.notes ?? 'Tap to open your day', refType: 'task', refId: t.id,
       })
+    }
+    if (settings.notif.deadlines && t.date && t.date < today && mins >= 8 * 60) {
+      fire(`overdue|${t.id}|${t.date}`, { kind: 'deadline', title: `${t.title} is overdue`, body: 'Morning summary', refType: 'task', refId: t.id })
     }
     if (settings.notif.deadlines && t.deadline && t.date && mins >= 9 * 60) {
       for (const [d, label] of [[addDays(t.date, -2), 'is due in two days'], [t.date, 'is due today']] as const) {

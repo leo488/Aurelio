@@ -1,0 +1,30 @@
+# Sends one test push notification. Run it from the Actions tab, or it runs when this file changes.
+name: Test push notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      who:
+        description: Who gets it
+        type: choice
+        options: [leo, soniya]
+        default: leo
+  push:
+    branches: [claude/design-v2-llqmbc]
+    paths: [.github/workflows/push-test.yml, scripts/push-test.mjs]
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/push-test.mjs
+        env:
+          SUPABASE_PROJECT_REF: ztfeeixhwszajlgfvfli
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          LEO_EMAIL: ${{ secrets.LEO_EMAIL }}
+          SONIYA_EMAIL: ${{ secrets.SONIYA_EMAIL }}
+          WHO: ${{ inputs.who || 'leo' }}

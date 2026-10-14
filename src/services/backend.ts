@@ -1,4 +1,4 @@
-import type { Activity, AppNotification, DailyStatus, Role, Routine, RoutineCompletion, Settings, Task, User } from '../data/types'
+import type { Activity, AppNotification, DailyStatus, Role, Routine, RoutineCompletion, Settings, Task, User, WeeklyGoal } from '../data/types'
 
 // The storage contract. The UI never sees this: screens talk to the store, the store talks to the
 // services in this folder, and the services talk to a Backend. Swapping local storage for a
@@ -22,6 +22,7 @@ export interface Backend {
   activity: Collection<Activity>
   settings: Collection<Settings>
   statuses: Collection<DailyStatus>
+  goals: Collection<WeeklyGoal>
 }
 
 export type CollectionName = Exclude<keyof Backend, 'kind'>
@@ -40,8 +41,10 @@ export interface AuthService {
   current(): Promise<Session | null>
   /** Whether this device has a PIN for the profile (decides "Enter PIN" vs first-time setup). */
   hasPin(role: Role): boolean
-  /** Send a one-time code to the profile's email. */
-  sendCode(role: Role): Promise<void>
+  /** Send a one-time code to the profile's email. 'link' means the email carries a sign-in link instead. */
+  sendCode(role: Role): Promise<'code' | 'link' | void>
+  /** The profile confirmed by opening the email's sign-in link, when the app was opened that way. */
+  fromEmailLink?(): Promise<Role | null>
   /** Check the emailed code. After this, setPin finishes setup. */
   verifyCode(role: Role, code: string): Promise<void>
   /** Create or replace the PIN once the email is verified. */
