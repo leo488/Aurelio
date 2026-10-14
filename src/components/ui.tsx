@@ -13,14 +13,14 @@ import { flash } from './Toast'
 // Building blocks copied from the v2 prototype (design_handoff_aurelio_dark_skin/design/Aurelio Prototype v2 Dark.dc.html).
 
 /** The gold progress ring: an SVG arc on a dark track. Today uses 76/34/6, the runner 172/80/7. */
-export function Ring({ pct, size = 76, r = 34, width = 6, glow = true, children }: { pct: number; size?: number; r?: number; width?: number; glow?: boolean; children?: React.ReactNode }) {
+export function Ring({ pct, size = 76, r = 34, width = 6, glow = true, track = 'var(--ring-track)', color = 'var(--gold)', children }: { pct: number; size?: number; r?: number; width?: number; glow?: boolean; track?: string; color?: string; children?: React.ReactNode }) {
   const c = 2 * Math.PI * r
   const mid = size / 2
   return (
     <div style={{ position: 'relative', width: size, height: size, flex: '0 0 auto' }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
-        <circle cx={mid} cy={mid} r={r} fill="none" stroke="var(--ring-track)" strokeWidth={width} />
-        <circle cx={mid} cy={mid} r={r} fill="none" stroke="var(--gold)" strokeWidth={width} strokeLinecap="round" strokeDasharray={c.toFixed(1)}
+        <circle cx={mid} cy={mid} r={r} fill="none" stroke={track} strokeWidth={width} style={{ transition: 'stroke .2s' }} />
+        <circle cx={mid} cy={mid} r={r} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeDasharray={c.toFixed(1)}
           strokeDashoffset={(c * (1 - Math.max(0, Math.min(100, pct)) / 100)).toFixed(1)}
           style={{ transition: 'stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)', filter: glow ? 'var(--glow-ring)' : undefined }} />
       </svg>

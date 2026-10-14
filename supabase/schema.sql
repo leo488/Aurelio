@@ -142,6 +142,7 @@ create table if not exists public.weekly_goals (
 -- Added later; safe to re-run on a database that already has data.
 alter table public.weekly_goals add column if not exists steps jsonb not null default '[]';
 alter table public.weekly_goals add column if not exists routine_id text references public.routines on delete set null;
+alter table public.weekly_goals add column if not exists priority boolean not null default false;
 
 create index if not exists routines_user on public.routines (user_id);
 create index if not exists completions_user_date on public.routine_completions (user_id, date);

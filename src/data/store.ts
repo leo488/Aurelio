@@ -78,6 +78,12 @@ interface Actions {
   toggleGoalStep: (id: string, stepId: string) => void
   removeGoalStep: (id: string, stepId: string) => void
   removeGoal: (id: string) => void
+  renameGoalStep: (id: string, stepId: string, title: string) => void
+  setPriority: (id: string, on: boolean) => void
+  reorderGoals: (week: string, ids: string[]) => void
+  nestGoal: (id: string, targetId: string, index?: number) => void
+  moveGoalStep: (fromId: string, stepId: string, toId: string, index: number) => void
+  stepToGoal: (id: string, stepId: string, index: number) => void
 
   updateSettings: (patch: Partial<Pick<Settings, 'notif' | 'oriConfirm'>>) => void
   /** Log a notification for me. A fixed id makes it idempotent (the same reminder from two devices is one record). */
@@ -105,6 +111,12 @@ const empty = (): Omit<DataState, 'sent'> => ({
   status: 'idle', me: null, partner: null, routines: [], completions: {}, tasks: [], goals: [], notifications: [], activity: [], settings: null, partnerStatus: null,
 })
 
+/** A goal with new steps: it is done exactly when it has steps and all of them are. */
+const withSteps = (g: WeeklyGoal, steps: WeeklyGoal['steps'] & object): WeeklyGoal => {
+  const done = steps.length ? steps.every((st) => st.done) : g.done
+  return { ...g, steps, done, doneAt: done ? g.doneAt ?? nowIso() : undefined, updatedAt: nowIso() }
+}
+
 const byNewest = <T extends { createdAt: string }>(a: T, b: T) => b.createdAt.localeCompare(a.createdAt)
 
 export const useData = create<DataState & Actions>()((set, get) => {
@@ -112,6 +124,14 @@ export const useData = create<DataState & Actions>()((set, get) => {
     const u = get().me
     if (!u) throw new Error('Not signed in')
     return u
+  }
+
+  /** Write a few goals at once: new ones are added, known ones replaced. */
+  const putGoals = (changed: WeeklyGoal[]) => {
+    if (!changed.length) return
+    const ids = new Set(changed.map((g) => g.id))
+    set((s) => ({ goals: [...s.goals.filter((g) => !ids.has(g.id)), ...changed] }))
+    changed.forEach((g) => save(goalService.saveGoal(g)))
   }
 
   const putRoutine = (r: Routine) => {
@@ -388,11 +408,73 @@ export const useData = create<DataState & Actions>()((set, get) => {
     removeGoalStep: (id, stepId) => {
       const g = get().goals.find((x) => x.id === id)
       if (!g) return
-      get().updateGoal(id, { steps: (g.steps ?? []).filter((st) => st.id !== stepId) })
+      putGoals([withSteps(g, (g.steps ?? []).filter((st) => st.id !== stepId))])
     },
     removeGoal: (id) => {
       set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }))
       save(goalService.deleteGoal(id))
+    },
+    renameGoalStep: (id, stepId, title) => {
+      const g = get().goals.find((x) => x.id === id)
+      if (!g || !title.trim()) return
+      get().updateGoal(id, { steps: (g.steps ?? []).map((st) => (st.id === stepId ? { ...st, title: title.trim() } : st)) })
+    },
+    setPriority: (id, on) => {
+      const g = get().goals.find((x) => x.id === id)
+      if (!g) return
+      haptic()
+      // One top priority a week: setting one clears the others.
+      const changed = get().goals
+        .filter((x) => x.week === g.week && (x.id === id ? !!x.priority !== on : x.priority && on))
+        .map((x) => ({ ...x, priority: x.id === id ? on : false, updatedAt: nowIso() }))
+      putGoals(changed)
+    },
+    reorderGoals: (week, ids) => {
+      const goals = get().goals.filter((g) => g.week === week)
+      putGoals(ids.flatMap((id, i) => {
+        const g = goals.find((x) => x.id === id)
+        return g && g.position !== i ? [{ ...g, position: i, updatedAt: nowIso() }] : []
+      }))
+    },
+    nestGoal: (id, targetId, index) => {
+      const g = get().goals.find((x) => x.id === id)
+      const target = get().goals.find((x) => x.id === targetId)
+      if (!g || !target || id === targetId) return
+      haptic(12)
+      // The goal becomes a step, and its own steps come along right after it.
+      const moved = [{ id: uid(), title: g.title, done: g.done }, ...(g.steps ?? [])]
+      const steps = [...(target.steps ?? [])]
+      steps.splice(index ?? steps.length, 0, ...moved)
+      putGoals([withSteps(target, steps)])
+      set((s) => ({ goals: s.goals.filter((x) => x.id !== id) }))
+      save(goalService.deleteGoal(id))
+    },
+    moveGoalStep: (fromId, stepId, toId, index) => {
+      const from = get().goals.find((x) => x.id === fromId)
+      const to = get().goals.find((x) => x.id === toId)
+      const step = from?.steps?.find((st) => st.id === stepId)
+      if (!from || !to || !step) return
+      const rest = (from.steps ?? []).filter((st) => st.id !== stepId)
+      if (fromId === toId) {
+        rest.splice(index, 0, step)
+        putGoals([withSteps(from, rest)])
+        return
+      }
+      const steps = [...(to.steps ?? [])]
+      steps.splice(index, 0, step)
+      putGoals([withSteps(from, rest), withSteps(to, steps)])
+    },
+    stepToGoal: (id, stepId, index) => {
+      const g = get().goals.find((x) => x.id === id)
+      const step = g?.steps?.find((st) => st.id === stepId)
+      if (!g || !step) return
+      const t = nowIso()
+      const goal: WeeklyGoal = { id: uid(), userId: me().id, week: g.week, title: step.title, done: step.done, doneAt: step.done ? t : undefined, position: 0, createdAt: t, updatedAt: t }
+      const parent = withSteps(g, (g.steps ?? []).filter((st) => st.id !== stepId))
+      const order = get().goals.filter((x) => x.week === g.week).sort((a, b) => a.position - b.position).map((x) => (x.id === id ? parent : x))
+      order.splice(index, 0, goal)
+      const was = new Map(get().goals.map((x) => [x.id, x.position]))
+      putGoals(order.map((x, i) => ({ ...x, position: i })).filter((x) => x.id === goal.id || x.id === id || was.get(x.id) !== x.position))
     },
 
     // ─── Settings and notifications ───────────────────────────────────────

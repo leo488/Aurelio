@@ -116,6 +116,8 @@ export interface WeeklyGoal {
   steps?: GoalStep[]
   /** A routine that feeds this goal; the week page shows how often it was done. */
   routineId?: string
+  /** The week's one top priority, shown above everything else. */
+  priority?: boolean
   createdAt: string
   updatedAt: string
 }
