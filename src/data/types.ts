@@ -96,6 +96,12 @@ export interface RoutineCompletion {
 
 export type Priority = 'low' | 'medium' | 'high'
 
+export interface GoalStep {
+  id: string
+  title: string
+  done: boolean
+}
+
 /** One goal for an ISO week ("2026-W42"). Private to its owner. */
 export interface WeeklyGoal {
   id: string
@@ -106,6 +112,10 @@ export interface WeeklyGoal {
   doneAt?: string
   /** Order in the list, smallest first. */
   position: number
+  /** Smaller pieces of the goal; ticking them all ticks the goal. */
+  steps?: GoalStep[]
+  /** A routine that feeds this goal; the week page shows how often it was done. */
+  routineId?: string
   createdAt: string
   updatedAt: string
 }

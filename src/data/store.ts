@@ -73,6 +73,10 @@ interface Actions {
   addGoal: (week: string, title: string) => void
   toggleGoal: (id: string) => void
   renameGoal: (id: string, title: string) => void
+  updateGoal: (id: string, patch: Partial<Pick<WeeklyGoal, 'steps' | 'routineId'>>) => void
+  addGoalStep: (id: string, title: string) => void
+  toggleGoalStep: (id: string, stepId: string) => void
+  removeGoalStep: (id: string, stepId: string) => void
   removeGoal: (id: string) => void
 
   updateSettings: (patch: Partial<Pick<Settings, 'notif' | 'oriConfirm'>>) => void
@@ -354,6 +358,37 @@ export const useData = create<DataState & Actions>()((set, get) => {
       const next = { ...g, title: title.trim(), updatedAt: nowIso() }
       set((s) => ({ goals: s.goals.map((x) => (x.id === id ? next : x)) }))
       save(goalService.saveGoal(next))
+    },
+    updateGoal: (id, patch) => {
+      const g = get().goals.find((x) => x.id === id)
+      if (!g) return
+      const next = { ...g, ...patch, updatedAt: nowIso() }
+      set((s) => ({ goals: s.goals.map((x) => (x.id === id ? next : x)) }))
+      save(goalService.saveGoal(next))
+    },
+    addGoalStep: (id, title) => {
+      const g = get().goals.find((x) => x.id === id)
+      if (!g || !title.trim()) return
+      // A new open step reopens a goal that was ticked through its steps.
+      const steps = [...(g.steps ?? []), { id: uid(), title: title.trim(), done: false }]
+      const next: WeeklyGoal = { ...g, steps, done: g.done && !(g.steps?.length), doneAt: g.done && !(g.steps?.length) ? g.doneAt : undefined, updatedAt: nowIso() }
+      set((s) => ({ goals: s.goals.map((x) => (x.id === id ? next : x)) }))
+      save(goalService.saveGoal(next))
+    },
+    toggleGoalStep: (id, stepId) => {
+      const g = get().goals.find((x) => x.id === id)
+      if (!g) return
+      haptic()
+      const steps = (g.steps ?? []).map((st) => (st.id === stepId ? { ...st, done: !st.done } : st))
+      const all = steps.length > 0 && steps.every((st) => st.done)
+      const next: WeeklyGoal = { ...g, steps, done: all, doneAt: all ? g.doneAt ?? nowIso() : undefined, updatedAt: nowIso() }
+      set((s) => ({ goals: s.goals.map((x) => (x.id === id ? next : x)) }))
+      save(goalService.saveGoal(next))
+    },
+    removeGoalStep: (id, stepId) => {
+      const g = get().goals.find((x) => x.id === id)
+      if (!g) return
+      get().updateGoal(id, { steps: (g.steps ?? []).filter((st) => st.id !== stepId) })
     },
     removeGoal: (id) => {
       set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }))

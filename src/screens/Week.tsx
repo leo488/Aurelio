@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Check } from '../components/controls'
-import { Label, Ring } from '../components/ui'
-import { dayProgress } from '../data/select'
+import { Icon } from '../components/Icon'
+import { catLook, Label, Ring } from '../components/ui'
+import { completionFor, dayProgress, routinesOn, routineTime } from '../data/select'
 import { useData } from '../data/store'
-import { addDays, diffDays, isoWeek, logicalToday, MONTHS_SHORT, weekKey, weekStart, WEEKDAY_LETTER } from '../lib/date'
+import type { Routine, WeeklyGoal } from '../data/types'
+import { addDays, diffDays, isoWeek, logicalToday, MONTHS_SHORT, weekKey, weekStart, WEEKDAY_LETTER, WEEKDAY_LONG } from '../lib/date'
+import { isComplete, isScheduled, progress } from '../lib/streak'
 
 const range = (monday: string) => {
   const sunday = addDays(monday, 6)
@@ -13,12 +16,22 @@ const range = (monday: string) => {
   return m1 === m2 ? `${d1} – ${d2} ${MONTHS_SHORT[m2 - 1]}` : `${d1} ${MONTHS_SHORT[m1 - 1]} – ${d2} ${MONTHS_SHORT[m2 - 1]}`
 }
 
-/** Leo's week: how each day went, and this week's goals to add, tick off, edit or carry over. */
+type Data = ReturnType<typeof useData.getState>
+
+/** How often a routine was done this week, out of the days it's on. */
+function routineWeek(data: Data, r: Routine, monday: string) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i)).filter((d) => isScheduled(r, d))
+  return { done: days.filter((d) => isComplete(r, d, completionFor(data, r, d))).length, total: days.length }
+}
+
+/** Leo's week: each day's routines, and this week's goals with their steps and routines. */
 export function Week() {
   const data = useData()
   const navigate = useNavigate()
-  const [draft, setDraft] = useState('')
   const today = logicalToday()
+  const [day, setDay] = useState(today)
+  const [draft, setDraft] = useState('')
+  const [open, setOpen] = useState<string | null>(null)
   const wk = isoWeek(today)
   const key = weekKey(today)
   const monday = weekStart(today)
@@ -28,6 +41,7 @@ export function Week() {
   const hit = goals.filter((g) => g.done).length
   const daysLeft = 6 - diffDays(today, monday)
   const allDone = goals.length > 0 && hit === goals.length
+  const dayRoutines = routinesOn(data, day)
 
   const add = () => {
     if (!draft.trim()) return
@@ -52,14 +66,37 @@ export function Week() {
             const d = addDays(monday, i)
             const p = dayProgress(data, d)
             const future = d > today
+            const picked = d === day
             return (
-              <div key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <button key={d} type="button" onClick={() => setDay(d)} aria-pressed={picked} aria-label={WEEKDAY_LONG[i]}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 0', borderRadius: 10, background: picked ? 'var(--chip-alt-2)' : 'transparent', transition: 'background .2s' }}>
                 <div style={{ fontSize: 10.5, fontWeight: 800, color: d === today ? 'var(--gold-text)' : 'var(--muted-3)' }}>{l}</div>
                 <Ring pct={future || !p.total ? 0 : (p.done / p.total) * 100} size={34} r={13.5} width={3.5} glow={d === today}>
-                  <span style={{ fontSize: 11.5, fontWeight: 800, color: d === today ? 'var(--ink)' : future ? 'var(--muted-4)' : 'var(--muted-1)' }}>{Number(d.slice(8))}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 800, color: d === today || picked ? 'var(--ink)' : future ? 'var(--muted-4)' : 'var(--muted-1)' }}>{Number(d.slice(8))}</span>
                 </Ring>
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--muted-3)', minHeight: 12 }}>{!future && p.total ? `${p.done}/${p.total}` : ''}</div>
-              </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="pad" style={{ paddingTop: 22 }}>
+        <Label>{day === today ? 'Today' : WEEKDAY_LONG[diffDays(day, monday)]}</Label>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 4 }}>
+          {dayRoutines.length === 0 && <div style={{ fontSize: 13.5, color: 'var(--muted-2)', padding: '12px 0' }}>No routines on this day.</div>}
+          {dayRoutines.map((r) => {
+            const c = completionFor(data, r, day)
+            const p = progress(r, day, c)
+            const done = p.total > 0 && p.done === p.total
+            const look = catLook(r)
+            return (
+              <Link key={r.id} to={`/routines/${r.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--divider)', color: 'inherit' }}>
+                <Icon name={look.icon} size={19} color={look.color} />
+                <div style={{ flex: 1, fontSize: 15, fontWeight: 700, color: done ? 'var(--muted-4)' : 'var(--ink)' }}>{r.name}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--muted-2)', fontWeight: 700 }}>{routineTime(r)}</div>
+                {done ? <Check done /> : <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted-3)', minWidth: 22, textAlign: 'right' }}>{day > today ? '' : `${p.done}/${p.total}`}</div>}
+              </Link>
             )
           })}
         </div>
@@ -80,16 +117,7 @@ export function Week() {
 
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 6 }}>
           {goals.map((g) => (
-            <div key={g.id} className="goal-row">
-              <button type="button" onClick={() => data.toggleGoal(g.id)} aria-label={g.done ? `Mark ${g.title} not done` : `Mark ${g.title} done`} style={{ lineHeight: 0, padding: 4, margin: -4 }}>
-                <Check done={g.done} />
-              </button>
-              <input className="text-input" defaultValue={g.title} aria-label="Goal"
-                onBlur={(e) => e.target.value.trim() !== g.title && data.renameGoal(g.id, e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                style={{ flex: 1, fontSize: 15.5, fontWeight: 700, color: g.done ? 'var(--muted-4)' : 'var(--ink)', textDecoration: g.done ? 'line-through' : 'none' }} />
-              <button type="button" onClick={() => data.removeGoal(g.id)} aria-label={`Remove ${g.title}`} style={{ fontSize: 18, lineHeight: 1, color: 'var(--muted-4)', padding: '4px 2px' }}>×</button>
-            </div>
+            <GoalRow key={g.id} goal={g} monday={monday} open={open === g.id} onOpen={() => setOpen(open === g.id ? null : g.id)} />
           ))}
         </div>
 
@@ -109,5 +137,67 @@ export function Week() {
         )}
       </div>
     </main>
+  )
+}
+
+/** One goal. Tap it to open its steps, link a routine, rename or remove it. */
+function GoalRow({ goal: g, monday, open, onOpen }: { goal: WeeklyGoal; monday: string; open: boolean; onOpen: () => void }) {
+  const data = useData()
+  const [step, setStep] = useState('')
+  const steps = g.steps ?? []
+  const stepsDone = steps.filter((s) => s.done).length
+  const routine = g.routineId ? data.routines.find((r) => r.id === g.routineId) : undefined
+  const rw = routine ? routineWeek(data, routine, monday) : null
+  const meta = [steps.length ? `${stepsDone}/${steps.length} steps` : '', routine && rw ? `${routine.name} ${rw.done}/${rw.total}` : ''].filter(Boolean).join(' · ')
+  const addStep = () => {
+    if (!step.trim()) return
+    data.addGoalStep(g.id, step)
+    setStep('')
+  }
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--divider)', animation: 'pop-in .2s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 0' }}>
+        <button type="button" onClick={() => data.toggleGoal(g.id)} aria-label={g.done ? `Mark ${g.title} not done` : `Mark ${g.title} done`} style={{ lineHeight: 0, padding: 4, margin: -4 }}>
+          <Check done={g.done} />
+        </button>
+        <button type="button" onClick={onOpen} aria-expanded={open} style={{ flex: 1, minWidth: 0, textAlign: 'left', color: 'inherit' }}>
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: g.done ? 'var(--muted-4)' : 'var(--ink)', textDecoration: g.done ? 'line-through' : 'none' }}>{g.title}</div>
+          {meta && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-2)', marginTop: 3 }}>{meta}</div>}
+        </button>
+        <span aria-hidden="true" style={{ fontSize: 15, color: 'var(--muted-4)', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }}>›</span>
+      </div>
+
+      {open && (
+        <div style={{ padding: '0 0 14px 35px', animation: 'pop-in .18s ease' }}>
+          {steps.map((s) => (
+            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '7px 0' }}>
+              <button type="button" onClick={() => data.toggleGoalStep(g.id, s.id)} aria-label={s.done ? `Mark ${s.title} not done` : `Mark ${s.title} done`} style={{ lineHeight: 0 }}>
+                <Check done={s.done} style={{ width: 18, height: 18 }} />
+              </button>
+              <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: s.done ? 'var(--muted-4)' : 'var(--ink)', textDecoration: s.done ? 'line-through' : 'none' }}>{s.title}</div>
+              <button type="button" onClick={() => data.removeGoalStep(g.id, s.id)} aria-label={`Remove ${s.title}`} style={{ fontSize: 16, lineHeight: 1, color: 'var(--muted-4)', padding: '2px 4px' }}>×</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '7px 0' }}>
+            <span style={{ width: 18, textAlign: 'center', fontSize: 16, color: 'var(--gold-text)' }} aria-hidden="true">+</span>
+            <input className="text-input" value={step} placeholder="Add a step" aria-label={`New step for ${g.title}`} enterKeyHint="done"
+              onChange={(e) => setStep(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addStep()} style={{ flex: 1, fontSize: 14, fontWeight: 600 }} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 }}>
+            <label className="row-value" style={{ position: 'relative', fontSize: 13, color: routine ? 'var(--gold-text)' : 'var(--muted-2)', fontWeight: 700 }}>
+              {routine ? `Routine: ${routine.name}` : 'Link a routine'} ›
+              <select aria-label="Linked routine" value={g.routineId ?? ''} onChange={(e) => data.updateGoal(g.id, { routineId: e.target.value || undefined })}
+                style={{ position: 'absolute', inset: 0, opacity: 0 }}>
+                <option value="">No routine</option>
+                {data.routines.filter((r) => r.active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={() => data.removeGoal(g.id)} style={{ fontSize: 13, fontWeight: 700, color: 'var(--clay)' }}>Remove goal</button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
