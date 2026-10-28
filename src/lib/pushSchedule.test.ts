@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { defaultSettings, seed } from '../data/seed'
+import type { TrackItem } from '../data/types'
 import { plannedPushes } from './pushSchedule'
 
 const now = new Date('2026-10-12T07:00:00')
 const data = seed(now)
 const leo = data.profiles.find((p) => p.role === 'leo')!
-const state = (userId: string) => ({ routines: data.routines, completions: Object.fromEntries(data.completions.map((c) => [c.id, c])), tasks: data.tasks, settings: defaultSettings(userId, now) })
+const items: TrackItem[] = ['a', 'b'].map((id, i) => ({ id, userId: leo.id, title: id, slot: 'day', position: i, startWeek: '2026-W42', createdAt: '', updatedAt: '' }))
+const state = (userId: string) => ({ trackItems: items, trackChecks: {}, journal: [], tasks: data.tasks, settings: defaultSettings(userId, now) })
 
 describe('plannedPushes', () => {
   it('plans only future pushes outside quiet hours', () => {
@@ -18,12 +20,11 @@ describe('plannedPushes', () => {
     }
   })
 
-  it('uses unique keys and includes the 09:30 deep work reminder', () => {
+  it('uses unique keys and plans the evening check-in and journal question', () => {
     const plan = plannedPushes(state(leo.id), leo, now)
     expect(new Set(plan.map((p) => p.key)).size).toBe(plan.length)
-    const deep = plan.find((p) => p.key === 'routine|leo-deep|2026-10-12')
-    expect(deep?.fireAt.getHours()).toBe(9)
-    expect(deep?.fireAt.getMinutes()).toBe(20)
+    expect(plan.find((p) => p.key === 'catchup|2026-10-12')?.title).toBe('2 left on today’s list')
+    expect(plan.find((p) => p.key === 'journal|2026-10-12')?.fireAt.getHours()).toBe(21)
   })
 
   it('plans nothing without settings', () => {

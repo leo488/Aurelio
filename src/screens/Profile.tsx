@@ -1,18 +1,16 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { Ember } from '../components/Ember'
-import { Icon } from '../components/Icon'
 import { flash } from '../components/Toast'
-import { catLook, Label, RemindSheet, useCheer, usePartnerLine } from '../components/ui'
+import { Label, RemindSheet, useCheer, usePartnerLine } from '../components/ui'
 import { resetLocalDemo } from '../boot'
 import { useAuth, useMe } from '../data/session'
-import { dayProgress } from '../data/select'
 import { useData } from '../data/store'
 import type { Role } from '../data/types'
-import { addDays, fromISO, logicalToday, MONTHS, weekday, WEEKDAY_LETTER } from '../lib/date'
-import { leoStats, soniaStats } from '../lib/stats'
-import { consistency } from '../lib/streak'
+import { addDays, fromISO, logicalToday, MONTHS, weekday, WEEKDAY_LETTER, weekKey } from '../lib/date'
+import { soniaStats } from '../lib/stats'
+import { checkedSet, dayScore, trackStreak, weekSummary } from '../lib/track'
 import { backendKind, getAuth } from '../services'
 
 const Cell = ({ value, caption, bottom }: { value: React.ReactNode; caption: string; bottom?: boolean }) => (
@@ -86,7 +84,7 @@ export function Profile() {
         <Avatar user={me.role} size={62} />
         <div>
           <h1 className="display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.03em', margin: 0 }}>{name}</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-2)', marginTop: 2, fontWeight: 600 }}>{me.role === 'leo' ? 'Routines and habits' : 'Day planner'}</div>
+          <div style={{ fontSize: 13, color: 'var(--muted-2)', marginTop: 2, fontWeight: 600 }}>{me.role === 'leo' ? 'Weekly tracker and journal' : 'Day planner'}</div>
         </div>
       </div>
 
@@ -125,43 +123,24 @@ export function Profile() {
 function LeoPerformance() {
   const data = useData()
   const today = logicalToday()
-  const s = leoStats(data, today)
+  const checked = checkedSet(Object.values(data.trackChecks))
+  const st = trackStreak(data.trackItems, checked, today)
+  const week = weekSummary(data.trackItems, checked, weekKey(today), today)
+  const now = dayScore(data.trackItems, checked, today)
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6))
-  const values = days.map((d) => {
-    const p = dayProgress(data, d)
-    return p.total ? Math.round((p.done / p.total) * 100) : 0
-  })
+  const values = days.map((d) => Math.round(dayScore(data.trackItems, checked, d).pct * 100))
   return (
     <>
-      <Big streak={s.current} unit="day streak" line={`Days with every routine done · longest ${s.longest}`} />
+      <Big streak={st.current} unit="day streak" line={`Days with at least one tick · longest ${st.longest}`} />
       <div className="pad" style={{ paddingTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-        <Cell value={`${s.today.rate}%`} caption="Today" />
-        <Cell value={s.routinesCompleted} caption="Routines completed" />
-        <Cell value={`${s.weekly}%`} caption="This week" bottom />
-        <Cell value={`${s.monthly}%`} caption="This month" bottom />
+        <Cell value={`${Math.round(now.pct * 100)}%`} caption="Today" />
+        <Cell value={`${Math.round(week.pct * 100)}%`} caption="This week" />
+        <Cell value={st.days} caption="Days with a tick" bottom />
+        <Cell value={data.journal.filter((e) => e.body.trim()).length} caption="Journal entries" bottom />
       </div>
       <div className="pad" style={{ paddingTop: 24 }}>
-        <Label>Weekly consistency</Label>
-        <Bars days={days} values={values} max={100} color="var(--olive)" />
-      </div>
-      <div className="pad" style={{ paddingTop: 24 }}>
-        <Label>By routine</Label>
-        {s.perRoutine.filter((x) => x.routine.active).map(({ routine: r, current, longest }) => {
-          const look = catLook(r)
-          return (
-            <Link key={r.id} to={`/routines/${r.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', borderBottom: '1px solid var(--divider)', color: 'inherit' }}>
-              <Icon name={look.icon} size={20} color={look.color} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted-2)', marginTop: 2 }}>Best {longest} · {consistency([r], data.completions, today, 90)}% over 90 days</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Ember streak={current} size={16} />
-                <div className="display" style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.03em' }}>{current}</div>
-              </div>
-            </Link>
-          )
-        })}
+        <Label>Last seven days</Label>
+        <Bars days={days} values={values} max={100} color="var(--gold)" />
       </div>
     </>
   )

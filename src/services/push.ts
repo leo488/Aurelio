@@ -61,8 +61,9 @@ export async function syncPushes(user: User) {
 
 /** Keeps the push schedule in step with the data: on sign-in and a moment after anything changes. */
 export function usePushSync(user: User | null) {
-  const routines = useData((s) => s.routines)
-  const completions = useData((s) => s.completions)
+  const trackItems = useData((s) => s.trackItems)
+  const trackChecks = useData((s) => s.trackChecks)
+  const journal = useData((s) => s.journal)
   const tasks = useData((s) => s.tasks)
   const settings = useData((s) => s.settings)
   const ready = useData((s) => s.status === 'ready')
@@ -74,5 +75,5 @@ export function usePushSync(user: User | null) {
     if (!user || !ready || !useSupabase) return
     const t = setTimeout(() => void syncPushes(user), 1500)
     return () => clearTimeout(t)
-  }, [user, ready, routines, completions, tasks, settings])
+  }, [user, ready, trackItems, trackChecks, journal, tasks, settings])
 }

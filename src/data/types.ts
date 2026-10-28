@@ -14,6 +14,60 @@ export interface User {
   role: Role
 }
 
+// ─── Leo: the weekly tracker, notes and journal ───────────────────────────────
+
+/** When in the day a tracked item belongs. */
+export type TrackSlot = 'morning' | 'day' | 'evening'
+
+/** One line of Leo's weekly list. The same list repeats every day of a week; ticks are per day. */
+export interface TrackItem {
+  id: string
+  userId: string
+  title: string
+  slot: TrackSlot
+  /** Order within its slot, smallest first. */
+  position: number
+  /** ISO week ("2026-W44") it first appears in. */
+  startWeek: string
+  /** Last ISO week it appears in; open-ended when absent. Removing an item sets this, so past weeks keep it. */
+  endWeek?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** One tick: the item was done on that day. `${itemId}|${date}` */
+export interface TrackCheck {
+  id: string
+  userId: string
+  itemId: string
+  date: string
+  createdAt: string
+}
+
+/** A note, often read from a photo of a notepad. Pinned notes show on Today. */
+export interface Note {
+  id: string
+  userId: string
+  title: string
+  body: string
+  /** A small JPEG data URL of the photo it came from. */
+  image?: string
+  pinned: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** One journal entry a day, and the question it answered. `${userId}|${date}` */
+export interface JournalEntry {
+  id: string
+  userId: string
+  date: string
+  prompt: string
+  body: string
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Leo: routines ────────────────────────────────────────────────────────────
 
 export type TimeCategory = 'morning' | 'afternoon' | 'evening' | 'night' | 'custom'

@@ -3,22 +3,17 @@ import { Layout, Only } from './components/Layout'
 import { SvgDefs } from './components/SvgDefs'
 import { useData } from './data/store'
 import { Calendar } from './screens/Calendar'
-import { EmptyDay } from './screens/EmptyDay'
 import { Login } from './screens/Login'
-import { Milestone } from './screens/Milestone'
-import { Missed } from './screens/Missed'
-import { NewRoutine } from './screens/NewRoutine'
 import { Notifications } from './screens/Notifications'
 import { NotificationSettings } from './screens/NotificationSettings'
 import { OriChat } from './screens/OriChat'
 import { OriVoice } from './screens/OriVoice'
 import { Profile } from './screens/Profile'
-import { RoutineDetail } from './screens/RoutineDetail'
-import { Routines } from './screens/Routines'
-import { RunDone } from './screens/RunDone'
-import { Runner } from './screens/Runner'
 import { SoniaToday } from './screens/SoniaToday'
 import { Streak } from './screens/Streak'
+import { Journal } from './screens/Journal'
+import { Notes } from './screens/Notes'
+import { NoteEdit } from './screens/NoteEdit'
 import { Week } from './screens/Week'
 import { TaskForm } from './screens/TaskForm'
 import { Tasks } from './screens/Tasks'
@@ -55,17 +50,13 @@ export default function App() {
           <Route path="/ori" element={<OriVoice />} />
           <Route path="/ori/chat" element={<OriChat />} />
 
-          <Route path="/welcome" element={leo(<EmptyDay />)} />
-          <Route path="/routines" element={leo(<Routines />)} />
-          <Route path="/routines/new" element={leo(<NewRoutine />)} />
-          <Route path="/routines/:id" element={leo(<RoutineDetail />)} />
-          <Route path="/routines/:id/edit" element={leo(<NewRoutine />)} />
-          <Route path="/run" element={leo(<Runner />)} />
-          <Route path="/run/done" element={leo(<RunDone />)} />
-          <Route path="/streak" element={leo(<Streak />)} />
           <Route path="/week" element={leo(<Week />)} />
-          <Route path="/milestone" element={leo(<Milestone />)} />
-          <Route path="/missed" element={leo(<Missed />)} />
+          <Route path="/streak" element={leo(<Streak />)} />
+          <Route path="/journal" element={leo(<Journal />)} />
+          <Route path="/notes" element={leo(<Notes />)} />
+          <Route path="/notes/:id" element={leo(<NoteEdit />)} />
+          {/* Routines were retired for the weekly tracker; old links land on the week. */}
+          {['/welcome', '/routines', '/routines/*', '/run', '/run/done', '/milestone', '/missed'].map((p) => <Route key={p} path={p} element={<Navigate to="/week" replace />} />)}
 
           <Route path="/calendar" element={sonia(<Calendar />)} />
           <Route path="/calendar/:day" element={sonia(<DayRedirect />)} />

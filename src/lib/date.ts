@@ -136,3 +136,9 @@ export const weekKey = (iso: string) => {
   return `${year}-W${pad(week)}`
 }
 export const weekStart = (iso: string) => addDays(iso, -weekday(iso))
+
+/** The Monday a week key ("2026-W44") starts on. 4 January is always in week 1. */
+export const mondayOf = (key: string) => {
+  const [y, w] = key.split('-W').map(Number)
+  return addDays(weekStart(`${y}-01-04`), (w - 1) * 7)
+}

@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Check } from '../components/controls'
-import { Icon } from '../components/Icon'
 import { Sheet } from '../components/Sheet'
-import { catLook, Label, Ring } from '../components/ui'
-import { completionFor, dayProgress, routinesOn, routineTime } from '../data/select'
+import { TrackAdd, TrackGrid } from '../components/track'
+import { Label } from '../components/ui'
 import { useData } from '../data/store'
-import type { Routine, WeeklyGoal } from '../data/types'
-import { addDays, diffDays, isoWeek, logicalToday, MONTHS_SHORT, weekKey, weekStart, WEEKDAY_LETTER, WEEKDAY_LONG } from '../lib/date'
-import { isComplete, isScheduled, progress } from '../lib/streak'
+import type { WeeklyGoal } from '../data/types'
+import { addDays, diffDays, logicalToday, mondayOf, MONTHS_SHORT, weekKey } from '../lib/date'
+import { checkedSet, firstWeek, trackWeekNumber, weekSummary } from '../lib/track'
 import { type DragItem, type DragState, type DropTarget, useDrag } from '../lib/useDrag'
 
 const range = (monday: string) => {
@@ -16,14 +15,6 @@ const range = (monday: string) => {
   const [, m1, d1] = monday.split('-').map(Number)
   const [, m2, d2] = sunday.split('-').map(Number)
   return m1 === m2 ? `${d1} – ${d2} ${MONTHS_SHORT[m2 - 1]}` : `${d1} ${MONTHS_SHORT[m1 - 1]} – ${d2} ${MONTHS_SHORT[m2 - 1]}`
-}
-
-type Data = ReturnType<typeof useData.getState>
-
-/** How often a routine was done this week, out of the days it's on. */
-function routineWeek(data: Data, r: Routine, monday: string) {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i)).filter((d) => isScheduled(r, d))
-  return { done: days.filter((d) => isComplete(r, d, completionFor(data, r, d))).length, total: days.length }
 }
 
 /** The dashed "type, then Add" field from the routine editor. */
@@ -39,25 +30,32 @@ function AddField({ value, onChange, onAdd, placeholder, label }: { value: strin
 /** A thin gold line where a dragged item would land. */
 const Slot = ({ on, sm }: { on: boolean; sm?: boolean }) => <div className={`drop-slot${sm ? ' sm' : ''}${on ? ' on' : ''}`} aria-hidden="true" />
 
-/** Leo's week: this week's top priority, each day's routines, and the goals as cards to drag, nest and tick. */
+/** Leo's week: the tracker grid he ticks day by day, its top priority, and the week's goals as cards to drag, nest and tick. */
 export function Week() {
   const data = useData()
   const today = logicalToday()
-  const [day, setDay] = useState(today)
+  const [params, setParams] = useSearchParams()
+  const thisWeek = weekKey(today)
+  const asked = params.get('w')
+  const key = asked && /^\d{4}-W\d{2}$/.test(asked) && asked <= thisWeek ? asked : thisWeek
   const [draft, setDraft] = useState('')
   const [open, setOpen] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
   const [asking, setAsking] = useState<{ id: string; targetId: string; index?: number } | null>(null)
-  const wk = isoWeek(today)
-  const key = weekKey(today)
-  const monday = weekStart(today)
+  const monday = mondayOf(key)
+  const first = firstWeek(data.trackItems, today)
+  const n = trackWeekNumber(first, key)
   const lastKey = weekKey(addDays(monday, -7))
+  const nextKey = weekKey(addDays(monday, 7))
   const goals = data.goals.filter((g) => g.week === key).sort((a, b) => a.position - b.position)
   const leftover = data.goals.filter((g) => g.week === lastKey && !g.done && !goals.some((x) => x.title === g.title))
   const top = goals.find((g) => g.priority)
   const hit = goals.filter((g) => g.done).length
+  const current = key === thisWeek
   const daysLeft = 6 - diffDays(today, monday)
   const allDone = goals.length > 0 && hit === goals.length
-  const dayRoutines = routinesOn(data, day)
+  const sum = weekSummary(data.trackItems, checkedSet(Object.values(data.trackChecks)), key, today)
+  const go = (k: string) => setParams(k === thisWeek ? {} : { w: k }, { replace: true })
 
   const { drag, bind } = useDrag((item: DragItem, t: DropTarget) => {
     if (item.kind === 'goal') {
@@ -87,55 +85,30 @@ export function Week() {
   return (
     <main className="screen" style={{ background: 'var(--wash-streak)' }}>
       <div className="pad top">
-        <div className="eyebrow">{range(monday).toUpperCase()} · {wk.year}</div>
-        <h1 className="display" style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.033em', margin: '4px 0 0' }}>Week {wk.week}</h1>
+        <div className="eyebrow">{range(monday).toUpperCase()} · {monday.slice(0, 4)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <h1 className="display" style={{ flex: 1, fontSize: 34, fontWeight: 700, letterSpacing: '-.033em', margin: 0 }}>Week {n}</h1>
+          <button type="button" className="week-nav" aria-label="Previous week" disabled={key <= first} onClick={() => go(lastKey)}>‹</button>
+          <button type="button" className="week-nav" aria-label="Next week" disabled={current} onClick={() => go(nextKey)}>›</button>
+        </div>
         <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 4, fontWeight: 600 }}>
-          {daysLeft === 0 ? 'Last day of the week' : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`} · {wk.of - wk.week} weeks left this year
+          {Math.round(sum.pct * 100)}% done{current ? ` · ${daysLeft === 0 ? 'last day' : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}` : ''}
+          {!current && <> · <Link to="/week" replace className="link-gold">This week</Link></>}
         </div>
       </div>
 
       {top && <PriorityBanner goal={top} onOpen={() => showGoal(top.id)} />}
 
       <div className="pad" style={{ paddingTop: top ? 14 : 22 }}>
-        <div className="card" style={{ padding: '12px 8px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
-          {WEEKDAY_LETTER.map((l, i) => {
-            const d = addDays(monday, i)
-            const p = dayProgress(data, d)
-            const future = d > today
-            const picked = d === day
-            return (
-              <button key={d} type="button" onClick={() => setDay(d)} aria-pressed={picked} aria-label={WEEKDAY_LONG[i]} className={picked ? 'day-pick on' : 'day-pick'}>
-                <div style={{ fontSize: 10.5, fontWeight: 800, color: picked ? 'var(--on-gold)' : d === today ? 'var(--gold-text)' : 'var(--muted-3)' }}>{l}</div>
-                <Ring pct={future || !p.total ? 0 : (p.done / p.total) * 100} size={34} r={13.5} width={3.5} glow={d === today && !picked}
-                  track={picked ? 'rgba(0,0,0,.14)' : undefined} color={picked ? 'var(--on-gold)' : undefined}>
-                  <span style={{ fontSize: 11.5, fontWeight: 800, color: picked ? 'var(--on-gold)' : d === today ? 'var(--ink)' : future ? 'var(--muted-4)' : 'var(--muted-1)' }}>{Number(d.slice(8))}</span>
-                </Ring>
-                <div style={{ fontSize: 9.5, fontWeight: 800, color: picked ? 'var(--on-gold)' : 'var(--muted-3)', minHeight: 12 }}>{!future && p.total ? `${p.done}/${p.total}` : ''}</div>
-              </button>
-            )
-          })}
+        <div className="card" style={{ padding: '12px 12px 10px 14px' }}>
+          <TrackGrid week={key} today={today} editing={editing} />
         </div>
-      </div>
-
-      <div className="pad" style={{ paddingTop: 22 }}>
-        <Label>{day === today ? 'Today' : WEEKDAY_LONG[diffDays(day, monday)]}</Label>
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 4 }}>
-          {dayRoutines.length === 0 && <div style={{ fontSize: 13.5, color: 'var(--muted-2)', padding: '12px 0' }}>No routines on this day.</div>}
-          {dayRoutines.map((r) => {
-            const c = completionFor(data, r, day)
-            const p = progress(r, day, c)
-            const done = p.total > 0 && p.done === p.total
-            const look = catLook(r)
-            return (
-              <Link key={r.id} to={`/routines/${r.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--divider)', color: 'inherit' }}>
-                <Icon name={look.icon} size={19} color={look.color} />
-                <div style={{ flex: 1, fontSize: 15, fontWeight: 700, color: done ? 'var(--muted-4)' : 'var(--ink)' }}>{r.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--muted-2)', fontWeight: 700 }}>{routineTime(r)}</div>
-                {done ? <Check done /> : <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted-3)', minWidth: 22, textAlign: 'right' }}>{day > today ? '' : `${p.done}/${p.total}`}</div>}
-              </Link>
-            )
-          })}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <button type="button" onClick={() => setEditing(!editing)} style={{ fontSize: 13, fontWeight: 800, color: editing ? 'var(--gold-text)' : 'var(--muted-2)', padding: '6px 2px' }}>
+            {editing ? 'Done' : 'Edit list'}
+          </button>
         </div>
+        {editing && <TrackAdd week={key} />}
       </div>
 
       <div className="pad" style={{ paddingTop: 28 }}>
@@ -155,7 +128,7 @@ export function Week() {
           {goals.map((g, i) => (
             <div key={g.id}>
               <Slot on={drag?.target?.kind === 'goal-at' && drag.target.index === i} />
-              <GoalCard goal={g} index={i} monday={monday} open={open === g.id} onOpen={() => setOpen(open === g.id ? null : g.id)} drag={drag} bind={bind} />
+              <GoalCard goal={g} index={i} open={open === g.id} onOpen={() => setOpen(open === g.id ? null : g.id)} drag={drag} bind={bind} />
             </div>
           ))}
           <Slot on={drag?.target?.kind === 'goal-at' && drag.target.index === goals.length} />
@@ -219,16 +192,14 @@ function PriorityBanner({ goal: g, onOpen }: { goal: WeeklyGoal; onOpen: () => v
 type Bind = ReturnType<typeof useDrag>['bind']
 
 /** One goal as a card: hold and drag to move it or nest it in another goal. Tap it to edit, add steps and more. */
-function GoalCard({ goal: g, index, monday, open, onOpen, drag, bind }: { goal: WeeklyGoal; index: number; monday: string; open: boolean; onOpen: () => void; drag: DragState | null; bind: Bind }) {
+function GoalCard({ goal: g, index, open, onOpen, drag, bind }: { goal: WeeklyGoal; index: number; open: boolean; onOpen: () => void; drag: DragState | null; bind: Bind }) {
   const data = useData()
   const [step, setStep] = useState('')
   const [title, setTitle] = useState<string | null>(null)
   const [editing, setEditing] = useState<{ id: string; title: string } | null>(null)
   const steps = g.steps ?? []
   const stepsDone = steps.filter((s) => s.done).length
-  const routine = g.routineId ? data.routines.find((r) => r.id === g.routineId) : undefined
-  const rw = routine ? routineWeek(data, routine, monday) : null
-  const meta = [steps.length ? `${stepsDone}/${steps.length} steps` : '', routine && rw ? `${routine.name} ${rw.done}/${rw.total}` : ''].filter(Boolean).join(' · ')
+  const meta = steps.length ? `${stepsDone}/${steps.length} steps` : ''
   const lifted = drag?.item.kind === 'goal' && drag.item.id === g.id
   const nestHere = drag?.target?.kind === 'nest' && drag.target.goalId === g.id && drag.target.index === undefined
   const stepHere = drag?.target?.kind === 'step-at' && drag.target.goalId === g.id && drag.target.index === steps.length && drag.item.kind === 'step' && drag.item.goalId !== g.id
@@ -304,14 +275,6 @@ function GoalCard({ goal: g, index, monday, open, onOpen, drag, bind }: { goal: 
                 <AddField value={step} onChange={setStep} onAdd={addStep} placeholder={steps.length ? 'Add another step…' : 'Add a step…'} label={`New step for ${g.title}`} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12, fontSize: 13, fontWeight: 700 }}>
-                <label style={{ position: 'relative', color: routine ? 'var(--gold-text)' : 'var(--muted-2)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {routine ? routine.name : 'Link routine'} ›
-                  <select aria-label="Linked routine" value={g.routineId ?? ''} onChange={(e) => data.updateGoal(g.id, { routineId: e.target.value || undefined })}
-                    style={{ position: 'absolute', inset: 0, opacity: 0 }}>
-                    <option value="">No routine</option>
-                    {data.routines.filter((r) => r.active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                  </select>
-                </label>
                 <button type="button" onClick={() => data.setPriority(g.id, !g.priority)} aria-pressed={!!g.priority}
                   style={{ color: g.priority ? 'var(--gold-text)' : 'var(--muted-2)', whiteSpace: 'nowrap' }}>
                   {g.priority ? '★ Top priority' : '☆ Make top priority'}

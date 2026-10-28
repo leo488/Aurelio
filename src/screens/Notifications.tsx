@@ -4,11 +4,11 @@ import { AppMark } from '../components/AppMark'
 import { flash } from '../components/Toast'
 import { Label, TaskSheet } from '../components/ui'
 import { useMe } from '../data/session'
-import { routinesOn, routineTime, tasksOn } from '../data/select'
+import { tasksOn } from '../data/select'
+import { checkedSet, dayScore } from '../lib/track'
 import { useData } from '../data/store'
 import type { AppNotification } from '../data/types'
-import { clock, dt, hhmm, logicalToday, minutesOf, nowMinutes, relativeDay } from '../lib/date'
-import { stepsOn } from '../lib/streak'
+import { clock, dt, hhmm, logicalToday, nowMinutes, relativeDay } from '../lib/date'
 
 const DOT: Record<AppNotification['kind'], string> = { routine: 'var(--gold)', task: 'var(--gold)', deadline: 'var(--clay)', partner: 'var(--gold-text)', nudge: 'var(--gold-text)', catchup: 'var(--gold)' }
 const KIND: Record<AppNotification['kind'], string> = { routine: 'Routine reminder', task: 'Task reminder', deadline: 'Deadline', catchup: 'Streak at risk', partner: '', nudge: '' }
@@ -41,7 +41,6 @@ export function Notifications() {
   const actions = (n: AppNotification): [string, () => void][] => {
     if (n.status === 'read' || !n.refId) return []
     const task = n.refType === 'task' ? data.tasks.find((t) => t.id === n.refId) : undefined
-    if (n.refType === 'routine') return [['Start', () => { read(n); navigate(`/run?r=${n.refId}`) }], ['Snooze 1h', () => snooze(n, 60)]]
     if (task && !task.completed && task.date && task.date < today) return [['Move to today', () => { data.updateTask(task.id, { date: today }); read(n); flash('Moved to today') }]]
     if (task && !task.completed) return [['Open', () => { read(n); setOpen(task.id) }], ['Snooze 30m', () => snooze(n, 30)]]
     return []
@@ -51,8 +50,8 @@ export function Notifications() {
   // Lock-screen preview: the next reminder, as it would arrive.
   const preview = me.role === 'leo'
     ? (() => {
-        const r = routinesOn(data, today).find((x) => x.reminder.enabled && x.scheduledTime && minutesOf(routineTime(x)) > nowMinutes())
-        return r ? { title: `${r.name} starts in ${r.reminder.minutesBefore} minutes`, body: stepsOn(r, today).map((s, k) => (k ? s.title.toLowerCase() : s.title)).join(', ') } : null
+        const left = dayScore(data.trackItems, checkedSet(Object.values(data.trackChecks)), today)
+        return left.total > left.done ? { title: `${left.total - left.done} left on today’s list`, body: `${me.name}, any tick counts.` } : null
       })()
     : (() => {
         const t = tasksOn(data, today).find((x) => !x.completed && x.reminderAt && x.reminderAt > dt(today, hhmm(nowMinutes())))

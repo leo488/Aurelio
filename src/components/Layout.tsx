@@ -1,24 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { matchPath, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../data/session'
-import { dayProgress } from '../data/select'
 import { useData } from '../data/store'
 import type { Role } from '../data/types'
 import { logicalToday } from '../lib/date'
 import { useReminders } from '../lib/reminders'
 import { soniaStats } from '../lib/stats'
-import { dayStreak } from '../lib/streak'
+import { checkedSet, dayScore, trackStreak } from '../lib/track'
 import { usePushSync } from '../services/push'
 import { BottomBar, type Tab } from './BottomBar'
 import { Toast } from './Toast'
 
-const HIDE_BAR = ['/', '/run', '/run/done', '/ori', '/ori/chat', '/milestone', '/routines/new', '/routines/:id/edit', '/tasks/new', '/tasks/:id']
-const DARK = ['/run', '/run/done', '/ori', '/milestone']
+const HIDE_BAR = ['/', '/ori', '/ori/chat', '/notes/:id', '/tasks/new', '/tasks/:id']
+const DARK = ['/ori']
 
 const TAB_FOR: [string, Tab][] = [
-  ['/today', 'today'], ['/welcome', 'today'], ['/week', 'week'],
-  ['/routines', 'routines'], ['/routines/:id', 'routines'],
-  ['/streak', 'streaks'], ['/missed', 'streaks'],
+  ['/today', 'today'], ['/week', 'week'], ['/streak', 'week'], ['/journal', 'journal'], ['/notes', 'today'],
   ['/profile', 'you'], ['/notifications', 'you'], ['/notifications/settings', 'you'],
   ['/calendar', 'calendar'], ['/tasks', 'upcoming'],
 ]
@@ -28,16 +25,17 @@ function useStatusPublisher() {
   const last = useRef('')
   const me = useData((s) => s.me)
   const ready = useData((s) => s.status === 'ready')
-  const routines = useData((s) => s.routines)
-  const completions = useData((s) => s.completions)
+  const trackItems = useData((s) => s.trackItems)
+  const trackChecks = useData((s) => s.trackChecks)
   const tasks = useData((s) => s.tasks)
   useEffect(() => {
     if (!me || !ready) return
     const date = logicalToday()
     const status = me.role === 'leo'
       ? (() => {
-          const p = dayProgress({ routines, completions }, date)
-          return { date, done: p.done, total: p.total, unit: 'routines' as const, streak: dayStreak(routines, completions, date).current }
+          const checked = checkedSet(Object.values(trackChecks))
+          const p = dayScore(trackItems, checked, date)
+          return { date, done: p.done, total: p.total, unit: 'tasks' as const, streak: trackStreak(trackItems, checked, date).current }
         })()
       : (() => {
           const st = soniaStats({ tasks }, date)
@@ -50,7 +48,7 @@ function useStatusPublisher() {
       useData.getState().publishStatus(status)
     }, 800)
     return () => clearTimeout(t)
-  }, [me, ready, routines, completions, tasks])
+  }, [me, ready, trackItems, trackChecks, tasks])
 }
 
 export function Layout() {

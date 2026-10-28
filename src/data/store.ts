@@ -6,9 +6,11 @@ import {
   backfilledRecently, completionId, completionOf, isComplete, MAX_SKIPS_PER_WEEK, requiredSteps, routineStreak, skipsThisWeek,
   stepsOn, type Completions,
 } from '../lib/streak'
-import { goalService, notificationService, profileService, routineService, settingsService, sharedService, taskService } from '../services'
+import { goalService, journalService, noteService, notificationService, profileService, routineService, settingsService, sharedService, taskService, trackService } from '../services'
+import { checkId, STARTER } from '../lib/track'
+import { mondayOf as mondayFor, weekKey } from '../lib/date'
 import { defaultSettings } from './seed'
-import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, RoutineStep, Settings, Task, User, WeeklyGoal } from './types'
+import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, RoutineStep, Settings, Task, User, WeeklyGoal, TrackItem, TrackCheck, TrackSlot, Note, JournalEntry } from './types'
 
 // Application state. Screens read from here and call these actions; each action updates the
 // state straight away and hands the change to the service layer to persist. Nothing in here
@@ -38,6 +40,11 @@ export interface DataState {
   completions: Completions
   tasks: Task[]
   goals: WeeklyGoal[]
+  /** Leo's weekly tracker list, its ticks by id, his notes and journal. Empty for Soniya. */
+  trackItems: TrackItem[]
+  trackChecks: Record<string, TrackCheck>
+  notes: Note[]
+  journal: JournalEntry[]
   notifications: AppNotification[]
   activity: Activity[]
   settings: Settings | null
@@ -48,6 +55,15 @@ export interface DataState {
 
 interface Actions {
   load: (me: User) => Promise<void>
+
+  addTrackItem: (title: string, slot: TrackSlot, week: string, onlyThisWeek?: boolean) => void
+  renameTrackItem: (id: string, title: string) => void
+  /** Off the list from `week` on; earlier weeks keep it. */
+  removeTrackItem: (id: string, week: string) => void
+  toggleCheck: (itemId: string, date: string) => void
+  saveNote: (note: Note) => void
+  deleteNote: (id: string) => void
+  saveJournal: (date: string, prompt: string, body: string) => void
   /** Pick up what the other person changed: nudges, cheers, their status. */
   refreshShared: () => Promise<void>
   clear: () => void
@@ -108,7 +124,7 @@ const loadSent = (): Record<string, number> => {
 }
 
 const empty = (): Omit<DataState, 'sent'> => ({
-  status: 'idle', me: null, partner: null, routines: [], completions: {}, tasks: [], goals: [], notifications: [], activity: [], settings: null, partnerStatus: null,
+  status: 'idle', me: null, partner: null, routines: [], completions: {}, tasks: [], goals: [], trackItems: [], trackChecks: {}, notes: [], journal: [], notifications: [], activity: [], settings: null, partnerStatus: null,
 })
 
 /** A goal with new steps: it is done exactly when it has steps and all of them are. */
@@ -187,8 +203,26 @@ export const useData = create<DataState & Actions>()((set, get) => {
         const [activity, partnerStatus] = await Promise.all([
           sharedService.getActivity(ids), partner ? sharedService.getStatus(partner.id, logicalToday()) : Promise.resolve(null),
         ])
+        // Leo's tracker, notes and journal. A table that isn't there yet leaves them empty; only a
+        // list that really came back empty gets the starter items.
+        const leo = user.role === 'leo'
+        const [trackItems, trackChecks, notes, journal] = leo
+          ? await Promise.all([
+              trackService.getItems(user.id).catch(() => null), trackService.getChecks(user.id).catch(() => [] as TrackCheck[]),
+              noteService.getNotes(user.id).catch(() => [] as Note[]), journalService.getEntries(user.id).catch(() => [] as JournalEntry[]),
+            ])
+          : [[], [], [], []]
+        let items = trackItems ?? []
+        if (leo && trackItems?.length === 0) {
+          const t = nowIso()
+          const week = weekKey(logicalToday())
+          items = STARTER.map(([slug, slot, title], i) => ({ id: `track-${slug}-${user.id.slice(0, 8)}`, userId: user.id, title, slot, position: i, startWeek: week, createdAt: t, updatedAt: t }))
+          items.forEach((i) => save(trackService.saveItem(i)))
+        }
         if (get().me?.id !== user.id) return
         set({
+          trackItems: items, trackChecks: Object.fromEntries(trackChecks.map((c) => [c.id, c])),
+          notes: notes.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), journal: journal.sort((a, b) => b.date.localeCompare(a.date)),
           status: 'ready', partner, routines, tasks, partnerStatus,
           goals: goals.sort((a, b) => a.position - b.position),
           completions: Object.fromEntries(completions.map((c) => [c.id, c])),
@@ -225,6 +259,72 @@ export const useData = create<DataState & Actions>()((set, get) => {
     },
 
     clear: () => set({ ...empty() }),
+
+    // ─── Leo's weekly tracker, notes and journal ───────────────────────────
+
+    addTrackItem: (title, slot, week, onlyThisWeek) => {
+      if (!title.trim()) return
+      const t = nowIso()
+      const position = Math.max(0, ...get().trackItems.filter((i) => i.slot === slot).map((i) => i.position + 1))
+      const item: TrackItem = { id: uid(), userId: me().id, title: title.trim(), slot, position, startWeek: week, endWeek: onlyThisWeek ? week : undefined, createdAt: t, updatedAt: t }
+      set((s) => ({ trackItems: [...s.trackItems, item] }))
+      save(trackService.saveItem(item))
+    },
+    renameTrackItem: (id, title) => {
+      const i = get().trackItems.find((x) => x.id === id)
+      if (!i || !title.trim()) return
+      const next = { ...i, title: title.trim(), updatedAt: nowIso() }
+      set((s) => ({ trackItems: s.trackItems.map((x) => (x.id === id ? next : x)) }))
+      save(trackService.saveItem(next))
+    },
+    removeTrackItem: (id, week) => {
+      const i = get().trackItems.find((x) => x.id === id)
+      if (!i) return
+      // Added this week: delete it and its ticks. Older: end it the week before, so past weeks keep it.
+      if (i.startWeek >= week) {
+        const gone = Object.values(get().trackChecks).filter((c) => c.itemId === id).map((c) => c.id)
+        set((s) => ({ trackItems: s.trackItems.filter((x) => x.id !== id), trackChecks: Object.fromEntries(Object.entries(s.trackChecks).filter(([k]) => !gone.includes(k))) }))
+        gone.forEach((c) => save(trackService.deleteCheck(c)))
+        save(trackService.deleteItem(id))
+        return
+      }
+      const next = { ...i, endWeek: weekKey(addDays(mondayFor(week), -7)), updatedAt: nowIso() }
+      set((s) => ({ trackItems: s.trackItems.map((x) => (x.id === id ? next : x)) }))
+      save(trackService.saveItem(next))
+    },
+    toggleCheck: (itemId, date) => {
+      const id = checkId(itemId, date)
+      haptic()
+      if (get().trackChecks[id]) {
+        set((s) => {
+          const { [id]: _gone, ...rest } = s.trackChecks
+          return { trackChecks: rest }
+        })
+        save(trackService.deleteCheck(id))
+        return
+      }
+      const c: TrackCheck = { id, userId: me().id, itemId, date, createdAt: nowIso() }
+      set((s) => ({ trackChecks: { ...s.trackChecks, [id]: c } }))
+      save(trackService.saveCheck(c))
+    },
+    saveNote: (note) => {
+      const next = { ...note, updatedAt: nowIso() }
+      set((s) => ({ notes: [next, ...s.notes.filter((n) => n.id !== note.id)] }))
+      save(noteService.saveNote(next))
+    },
+    deleteNote: (id) => {
+      set((s) => ({ notes: s.notes.filter((n) => n.id !== id) }))
+      save(noteService.deleteNote(id))
+    },
+    saveJournal: (date, prompt, body) => {
+      const id = `${me().id}|${date}`
+      const old = get().journal.find((e) => e.id === id)
+      if (!old && !body.trim()) return
+      const t = nowIso()
+      const entry: JournalEntry = { id, userId: me().id, date, prompt, body, createdAt: old?.createdAt ?? t, updatedAt: t }
+      set((s) => ({ journal: [entry, ...s.journal.filter((e) => e.id !== id)].sort((a, b) => b.date.localeCompare(a.date)) }))
+      save(journalService.saveEntry(entry))
+    },
 
     // ─── Routines ──────────────────────────────────────────────────────────
 

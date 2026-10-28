@@ -1,6 +1,7 @@
 # Sets up the Supabase backend (database, sign-in, push and AI) and publishes the app to GitHub Pages
 # (gh-pages branch), so it can be installed from Chrome. The backend step runs once the repository
-# secrets LEO_EMAIL, SONIYA_EMAIL and SUPABASE_ACCESS_TOKEN exist (ANTHROPIC_API_KEY turns on the AI);
+# secrets LEO_EMAIL, SONIYA_EMAIL and SUPABASE_ACCESS_TOKEN exist (ANTHROPIC_API_KEY turns on Ori's AI,
+# GEMINI_API_KEY the notepad reader);
 # until then the app is built in on-device mode.
 name: Deploy to GitHub Pages
 
@@ -29,6 +30,7 @@ jobs:
       LEO_EMAIL: ${{ secrets.LEO_EMAIL }}
       SONIYA_EMAIL: ${{ secrets.SONIYA_EMAIL }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       SMTP_USER: ${{ secrets.SMTP_USER }}
       SMTP_PASS: ${{ secrets.SMTP_PASS }}
     steps:
@@ -65,6 +67,7 @@ jobs:
           supabase functions deploy auth --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
           supabase functions deploy push-dispatch --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
           supabase functions deploy ori --project-ref "$SUPABASE_PROJECT_REF" --use-api
+          supabase functions deploy scan --project-ref "$SUPABASE_PROJECT_REF" --use-api
       - name: Check the live backend
         if: steps.check.outputs.ready == 'true'
         run: node scripts/supabase-smoke.mjs

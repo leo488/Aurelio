@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { completionFor, dayProgress, routinesOn, routineTime } from '../data/select'
 import { useData } from '../data/store'
 import type { AppNotification, User } from '../data/types'
 import { addDays, logicalToday, minutesOf, nowMinutes, toDate } from './date'
-import { progress, stepsOn } from './streak'
+import { promptFor } from './journalPrompts'
+import { checkedSet, dayScore } from './track'
 
 // Reminders are worked out from the records themselves (a routine's reminder settings, a task's
 // reminder time), so editing or deleting the record is all it takes to change them. When one is
@@ -56,26 +56,14 @@ export function checkReminders(user: User, now = new Date()) {
   if (quiet) return
 
   if (user.role === 'leo') {
-    if (settings.notif.reminders) {
-      for (const r of routinesOn(s, today)) {
-        if (!r.reminder.enabled || !r.scheduledTime) continue
-        const start = minutesOf(routineTime(r))
-        const p = progress(r, today, completionFor(s, r, today))
-        if (p.done === p.total) continue
-        if (mins >= start - r.reminder.minutesBefore && mins < start) {
-          const left = start - mins
-          fire(`routine|${r.id}|${today}`, {
-            kind: 'routine', title: `${r.name} starts in ${left} minute${left === 1 ? '' : 's'}`,
-            body: stepsOn(r, today).map((x) => x.title).join(', '), refType: 'routine', refId: r.id,
-          })
-        }
-      }
-    }
-    // Streak at risk: once, at 20:00, when routines are still open.
-    const day = dayProgress(s, today)
+    // The evening check-in, once at 20:00, while today's list is still open; then today's question.
+    const day = dayScore(s.trackItems, checkedSet(Object.values(s.trackChecks)), today)
     const left = day.total - day.done
     if (settings.notif.deadlines && mins >= 20 * 60 && left > 0) {
-      fire(`catchup|${today}`, { kind: 'catchup', title: `${left} routine${left === 1 ? '' : 's'} left today`, body: `${user.name}, there’s still time.` })
+      fire(`catchup|${today}`, { kind: 'catchup', title: `${left} left on today’s list`, body: `${user.name}, any tick counts.` })
+    }
+    if (settings.notif.reminders && mins >= 21 * 60 + 30 && !s.journal.some((e) => e.date === today && e.body.trim())) {
+      fire(`journal|${today}`, { kind: 'catchup', title: 'Today’s question', body: promptFor(today) })
     }
   }
 

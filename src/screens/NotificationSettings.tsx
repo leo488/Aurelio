@@ -47,8 +47,8 @@ export function NotificationSettings() {
 
   const rows: [string, string, boolean, (v: boolean) => void][] = me.role === 'leo'
     ? [
-        ['Routine start', 'Before each routine, as set on the routine', s.notif.reminders, (v) => set({ reminders: v })],
-        ['Streak at risk', 'Once, at 20:00, if a routine is still open', s.notif.deadlines, (v) => set({ deadlines: v })],
+        ['Evening check-in', 'Once, at 20:00, if today’s list is still open', s.notif.deadlines, (v) => set({ deadlines: v })],
+        ['Journal question', '21:30, until you’ve written today', s.notif.reminders, (v) => set({ reminders: v })],
         [`From ${partnerName}`, 'Reminders and cheers', s.notif.partner, (v) => set({ partner: v })],
       ]
     : [

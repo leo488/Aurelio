@@ -1,8 +1,8 @@
-import { completionFor, dayProgress, routinesOn, routineTime } from '../data/select'
 import type { DataState } from '../data/store'
 import type { User } from '../data/types'
 import { addDays, dt, logicalToday, minutesOf, toDate } from './date'
-import { progress, stepsOn } from './streak'
+import { promptFor } from './journalPrompts'
+import { checkedSet, dayScore } from './track'
 
 // The same reminders checkReminders shows while the app is open, worked out a week ahead so the
 // server can push them when it's closed. Keys match checkReminders' keys, so a reminder the open app
@@ -25,7 +25,7 @@ const inQuiet = (mins: number, from: string, to: string) => {
   return a <= b ? mins >= a && mins < b : mins >= a || mins < b
 }
 
-type State = Pick<DataState, 'routines' | 'completions' | 'tasks' | 'settings'>
+type State = Pick<DataState, 'tasks' | 'settings' | 'trackItems' | 'trackChecks' | 'journal'>
 
 export function plannedPushes(s: State, user: User, now = new Date()): PlannedPush[] {
   const settings = s.settings
@@ -41,29 +41,20 @@ export function plannedPushes(s: State, user: User, now = new Date()): PlannedPu
   const days = Array.from({ length: DAYS_AHEAD }, (_, i) => addDays(today, i))
 
   if (user.role === 'leo') {
+    const checked = checkedSet(Object.values(s.trackChecks))
     for (const d of days) {
-      if (settings.notif.reminders) {
-        for (const r of routinesOn(s, d)) {
-          if (!r.reminder.enabled || !r.scheduledTime) continue
-          const p = progress(r, d, completionFor(s, r, d))
-          if (p.total > 0 && p.done === p.total) continue
-          const start = toDate(dt(d, routineTime(r)))
-          const n = r.reminder.minutesBefore
-          add({
-            key: `routine|${r.id}|${d}`, fireAt: new Date(start.getTime() - n * 60000),
-            title: n ? `${r.name} starts in ${n} minute${n === 1 ? '' : 's'}` : `${r.name} starts now`,
-            body: stepsOn(r, d).map((x) => x.title).join(', '), url: `routines/${r.id}`,
-          })
-        }
-      }
-      const day = dayProgress(s, d)
+      // The evening check-in: whatever is still open on today's list. Only today's ticks are known.
+      const day = dayScore(s.trackItems, checked, d)
       const left = day.total - day.done
       if (settings.notif.deadlines && left > 0) {
         add({
           key: `catchup|${d}`, fireAt: toDate(dt(d, '20:00')),
-          title: d === today ? `${left} routine${left === 1 ? '' : 's'} left today` : 'Routines still open today',
-          body: `${user.name}, there’s still time.`, url: 'today',
+          title: d === today ? `${left} left on today’s list` : 'Your list is still open today',
+          body: `${user.name}, any tick counts.`, url: 'today',
         })
+      }
+      if (settings.notif.reminders && !s.journal.some((e) => e.date === d && e.body.trim())) {
+        add({ key: `journal|${d}`, fireAt: toDate(dt(d, '21:30')), title: 'Today’s question', body: promptFor(d), url: 'journal' })
       }
     }
   }

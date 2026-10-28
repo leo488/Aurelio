@@ -12,11 +12,12 @@ import { checkPin, hasPin, savePin } from '../pin'
 const TABLE: Record<CollectionName, string> = {
   profiles: 'profiles', routines: 'routines', completions: 'routine_completions', tasks: 'tasks',
   notifications: 'notifications', activity: 'activity', settings: 'settings', statuses: 'daily_status', goals: 'weekly_goals',
+  trackItems: 'track_items', trackChecks: 'track_checks', notes: 'notes', journal: 'journal_entries',
 }
 
 /** Columns Postgres returns as timestamptz; normalised back to the ISO strings the app writes. */
 const TIMESTAMPS = new Set(['updated_at', 'completed_at', 'started_at', 'scheduled_for', 'done_at'])
-const TIMESTAMP_CREATED = new Set<CollectionName>(['tasks', 'notifications', 'activity', 'goals'])
+const TIMESTAMP_CREATED = new Set<CollectionName>(['tasks', 'notifications', 'activity', 'goals', 'trackItems', 'trackChecks', 'notes', 'journal'])
 
 const snake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
@@ -125,6 +126,10 @@ export function createSupabaseServices(): { backend: Backend; auth: AuthService 
     settings: collection(sb, 'settings'),
     statuses: collection(sb, 'statuses'),
     goals: collection(sb, 'goals'),
+    trackItems: collection(sb, 'trackItems'),
+    trackChecks: collection(sb, 'trackChecks'),
+    notes: collection(sb, 'notes'),
+    journal: collection(sb, 'journal'),
   }
   const backend = withOutbox(raw)
   void backend.flush()
