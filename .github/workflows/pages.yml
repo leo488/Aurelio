@@ -105,6 +105,12 @@ jobs:
           npm run build
       # Deep links (e.g. /Aurelio/today) load the app instead of a Pages 404.
       - run: cp dist/index.html dist/404.html && touch dist/.nojekyll
+      - name: Keep the last versions' files, so a copy of the app open during an update can finish loading
+        run: |
+          git fetch --depth=10 origin gh-pages || exit 0
+          for c in $(git rev-list --max-count=10 FETCH_HEAD); do
+            git archive "$c" assets 2>/dev/null | tar -x -C dist --skip-old-files || true
+          done
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

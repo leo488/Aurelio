@@ -22,6 +22,9 @@ if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
   })
 }
 
+// The app's files loaded, so a later missing file may reload again.
+try { sessionStorage.removeItem('aurelio:asset-reload') } catch { /* storage blocked */ }
+
 void boot().finally(() =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
