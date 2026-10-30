@@ -1,7 +1,8 @@
 import type { RoutineIcon, TimeCategory } from '../data/types'
+import { askOri } from './oriRemote'
 import { capitalize } from './words'
 
-// AI routine creation. A generator (an LLM behind VITE_ORI_ENDPOINT, or the local fallback below)
+// AI routine creation. A generator (Claude behind the `ori` function, or the local fallback below)
 // returns this structured draft; it never touches app state. The draft is validated, shown in the
 // normal New Routine form for review, and only saved when the user taps Save.
 
@@ -55,20 +56,12 @@ export const draftIcon = (d: RoutineDraft): RoutineIcon =>
 
 /** Ask the configured endpoint for a draft; fall back to the local generator offline or on error. */
 export async function generateRoutine(prompt: string): Promise<RoutineDraft> {
-  const endpoint = import.meta.env.VITE_ORI_ENDPOINT as string | undefined
-  if (endpoint && navigator.onLine) {
+  const json = await askOri<{ routine?: unknown }>({ mode: 'routine', prompt })
+  if (json) {
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'routine', prompt, schema: 'RoutineDraft' }),
-      })
-      if (res.ok) {
-        const json = (await res.json()) as { routine?: unknown }
-        return validateDraft(json.routine ?? json)
-      }
+      return validateDraft(json.routine ?? json)
     } catch {
-      /* fall through */
+      /* fall through to the local draft */
     }
   }
   return localDraft(prompt)

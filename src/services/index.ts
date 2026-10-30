@@ -1,5 +1,5 @@
 import { useSupabase } from '../config'
-import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, Settings, Task, User } from '../data/types'
+import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, Settings, Task, User, WeeklyGoal, TrackItem, TrackCheck, Note, JournalEntry } from '../data/types'
 import type { AuthService, Backend } from './backend'
 import { localAuth } from './local/localAuth'
 import { localBackend } from './local/localBackend'
@@ -51,6 +51,32 @@ export const taskService = {
   createTask: (t: Task) => backend.tasks.put(t),
   updateTask: (t: Task) => backend.tasks.put(t),
   deleteTask: (id: string) => backend.tasks.remove(id),
+}
+
+export const goalService = {
+  getGoals: (userId: string) => backend.goals.list({ userId }),
+  saveGoal: (g: WeeklyGoal) => backend.goals.put(g),
+  deleteGoal: (id: string) => backend.goals.remove(id),
+}
+
+export const trackService = {
+  getItems: (userId: string) => backend.trackItems.list({ userId }),
+  saveItem: (i: TrackItem) => backend.trackItems.put(i),
+  deleteItem: (id: string) => backend.trackItems.remove(id),
+  getChecks: (userId: string) => backend.trackChecks.list({ userId }),
+  saveCheck: (c: TrackCheck) => backend.trackChecks.put(c),
+  deleteCheck: (id: string) => backend.trackChecks.remove(id),
+}
+
+export const noteService = {
+  getNotes: (userId: string) => backend.notes.list({ userId }),
+  saveNote: (n: Note) => backend.notes.put(n),
+  deleteNote: (id: string) => backend.notes.remove(id),
+}
+
+export const journalService = {
+  getEntries: (userId: string) => backend.journal.list({ userId }),
+  saveEntry: (e: JournalEntry) => backend.journal.put(e),
 }
 
 export const notificationService = {

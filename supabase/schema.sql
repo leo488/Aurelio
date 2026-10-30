@@ -1,8 +1,8 @@
 -- Aurelio database: two people, their routines and tasks, and a small shared layer.
 -- Run once in the Supabase SQL editor (Dashboard → SQL → New query). Safe to re-run.
 --
--- Before running: replace the two emails in the `members` insert below with the real ones
--- (the same values as VITE_LEO_EMAIL and VITE_SONIA_EMAIL).
+-- The deploy workflow (.github/workflows/pages.yml) runs this, then push.sql, and fills `members`
+-- from the LEO_EMAIL and SONIYA_EMAIL repository secrets so the addresses never live in the code.
 
 -- ─── Who may use the app ─────────────────────────────────────────────────────
 
@@ -10,11 +10,6 @@ create table if not exists public.members (
   email text primary key,
   role  text not null unique check (role in ('leo', 'sonia'))
 );
-
-insert into public.members (email, role) values
-  ('leo@example.com', 'leo'),
-  ('sonia@example.com', 'sonia')
-on conflict (role) do update set email = excluded.email;
 
 -- True when the signed-in user is one of the two members. Every policy below checks it.
 create or replace function public.is_member() returns boolean
@@ -131,11 +126,82 @@ create table if not exists public.daily_status (
   unique (user_id, date)
 );
 
+-- Goals for an ISO week ("2026-W42"). Private to the owner.
+create table if not exists public.weekly_goals (
+  id         text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  week       text not null check (week ~ '^\d{4}-W\d{2}$'),
+  title      text not null,
+  done       boolean not null default false,
+  done_at    timestamptz,
+  position   integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Added later; safe to re-run on a database that already has data.
+alter table public.weekly_goals add column if not exists steps jsonb not null default '[]';
+alter table public.weekly_goals add column if not exists routine_id text references public.routines on delete set null;
+alter table public.weekly_goals add column if not exists priority boolean not null default false;
+
+-- Leo's weekly tracker: the same list every day of a week, ticked day by day. Private to the owner.
+create table if not exists public.track_items (
+  id         text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  title      text not null,
+  slot       text not null default 'day' check (slot in ('morning', 'day', 'evening')),
+  position   integer not null default 0,
+  start_week text not null check (start_week ~ '^\d{4}-W\d{2}$'),
+  end_week   text check (end_week ~ '^\d{4}-W\d{2}$'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.track_checks (
+  id         text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  item_id    text not null references public.track_items on delete cascade,
+  date       date not null,
+  created_at timestamptz not null default now()
+);
+-- Sub to-dos sit under another item on the list.
+alter table public.track_items add column if not exists parent_id text references public.track_items on delete cascade;
+-- Notes, often read from a photo of a notepad. `image` is a small JPEG data URL.
+create table if not exists public.notes (
+  id         text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  title      text not null default '',
+  body       text not null default '',
+  image      text,
+  pinned     boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+-- Several photos to a note, and where it was made.
+alter table public.notes add column if not exists images jsonb not null default '[]';
+alter table public.notes add column if not exists place text;
+alter table public.notes add column if not exists lat double precision;
+alter table public.notes add column if not exists lng double precision;
+-- One journal entry a day, with the question it answered.
+create table if not exists public.journal_entries (
+  id         text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  date       date not null,
+  prompt     text not null,
+  body       text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists routines_user on public.routines (user_id);
 create index if not exists completions_user_date on public.routine_completions (user_id, date);
 create index if not exists tasks_user_date on public.tasks (user_id, date);
 create index if not exists notifications_user on public.notifications (user_id, scheduled_for desc);
 create index if not exists activity_user on public.activity (user_id, created_at desc);
+create index if not exists goals_user_week on public.weekly_goals (user_id, week);
+create index if not exists track_items_user on public.track_items (user_id);
+create index if not exists track_checks_user on public.track_checks (user_id, date);
+create index if not exists notes_user on public.notes (user_id);
+create index if not exists journal_user on public.journal_entries (user_id, date);
 
 -- ─── Row Level Security ──────────────────────────────────────────────────────
 
@@ -148,12 +214,17 @@ alter table public.notifications       enable row level security;
 alter table public.activity            enable row level security;
 alter table public.settings            enable row level security;
 alter table public.daily_status        enable row level security;
+alter table public.weekly_goals        enable row level security;
+alter table public.track_items         enable row level security;
+alter table public.track_checks        enable row level security;
+alter table public.notes               enable row level security;
+alter table public.journal_entries     enable row level security;
 
 -- Private tables: only the owner, and only if they are a member.
 do $$
 declare t text;
 begin
-  foreach t in array array['routines', 'routine_completions', 'tasks', 'settings'] loop
+  foreach t in array array['routines', 'routine_completions', 'tasks', 'settings', 'weekly_goals', 'track_items', 'track_checks', 'notes', 'journal_entries'] loop
     execute format('drop policy if exists own_rows on public.%I', t);
     execute format('create policy own_rows on public.%I for all to authenticated
       using (user_id = auth.uid() and public.is_member())

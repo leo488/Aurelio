@@ -1,20 +1,23 @@
-import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { NotifyPrompt } from '../components/NotifyPrompt'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AppMark } from '../components/AppMark'
 import { flash } from '../components/Toast'
+import { Label, TaskSheet } from '../components/ui'
 import { useMe } from '../data/session'
-import { routinesOn, routineTime, tasksOn } from '../data/select'
+import { tasksOn } from '../data/select'
+import { checkedSet, dayScore } from '../lib/track'
 import { useData } from '../data/store'
 import type { AppNotification } from '../data/types'
-import { clock, dt, hhmm, logicalToday, minutesOf, nowMinutes, relativeDay } from '../lib/date'
-import { stepsOn } from '../lib/streak'
+import { clock, dt, hhmm, logicalToday, nowMinutes, relativeDay } from '../lib/date'
 
-const DOT: Record<AppNotification['kind'], string> = { routine: 'var(--gold)', task: 'var(--gold)', deadline: 'var(--clay)', partner: 'var(--gold)', nudge: 'var(--iris)', catchup: 'var(--gold)' }
+const DOT: Record<AppNotification['kind'], string> = { routine: 'var(--gold)', task: 'var(--gold)', deadline: 'var(--clay)', partner: 'var(--gold-text)', nudge: 'var(--gold-text)', catchup: 'var(--gold)' }
+const KIND: Record<AppNotification['kind'], string> = { routine: 'Routine reminder', task: 'Task reminder', deadline: 'Deadline', catchup: 'Streak at risk', partner: '', nudge: '' }
 
 export function Notifications() {
   const data = useData()
-  const { me } = useMe()
+  const { me, partnerName } = useMe()
   const navigate = useNavigate()
+  const [open, setOpen] = useState<string | null>(null)
   const today = logicalToday()
   const now = new Date().toISOString()
   const inbox = data.notifications.filter((n) => n.status !== 'scheduled' || n.scheduledFor <= now)
@@ -28,44 +31,27 @@ export function Notifications() {
     const day = logicalToday(d)
     return day === today ? clock(d) : `${relativeDay(day, today)} ${clock(d)}`
   }
-  const todayList = inbox.filter((n) => logicalToday(new Date(n.scheduledFor)) === today)
-  const earlier = inbox.filter((n) => logicalToday(new Date(n.scheduledFor)) !== today)
-
-  const snooze = (n: AppNotification) => {
-    const until = new Date(Date.now() + 2 * 3600000)
-    if (n.refId) data.updateTask(n.refId, { reminderAt: dt(logicalToday(until), hhmm(until.getHours() * 60 + until.getMinutes())) })
-    data.setNotificationStatus(n.id, 'read')
+  const read = (n: AppNotification) => data.setNotificationStatus(n.id, 'read')
+  const snooze = (n: AppNotification, minutes: number) => {
+    const until = new Date(Date.now() + minutes * 60000)
+    if (n.refType === 'task' && n.refId) data.updateTask(n.refId, { reminderAt: dt(logicalToday(until), hhmm(until.getHours() * 60 + until.getMinutes())) })
+    read(n)
     flash(`Snoozed until ${clock(until)}`)
   }
-
-  const open = (n: AppNotification) => {
-    data.setNotificationStatus(n.id, 'read')
-    if (n.refType === 'routine' && n.refId) navigate(`/routines/${n.refId}`)
-    else if (n.refType === 'task' && n.refId) navigate(`/tasks/${n.refId}`)
-    else if (n.kind === 'partner' || n.kind === 'nudge') navigate('/together')
+  const actions = (n: AppNotification): [string, () => void][] => {
+    if (n.status === 'read' || !n.refId) return []
+    const task = n.refType === 'task' ? data.tasks.find((t) => t.id === n.refId) : undefined
+    if (task && !task.completed && task.date && task.date < today) return [['Move to today', () => { data.updateTask(task.id, { date: today }); read(n); flash('Moved to today') }]]
+    if (task && !task.completed) return [['Open', () => { read(n); setOpen(task.id) }], ['Snooze 30m', () => snooze(n, 30)]]
+    return []
   }
-
-  const row = (n: AppNotification, last: boolean) => {
-    const read = n.status === 'read'
-    return (
-      <div key={n.id} style={{ display: 'flex', gap: 13, padding: '16px 0', borderBottom: last ? undefined : '1px solid var(--divider)', opacity: read ? 0.6 : 1 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: read ? 'var(--dot-read)' : DOT[n.kind], marginTop: 6, flex: '0 0 auto' }} />
-        <button type="button" style={{ flex: 1, textAlign: 'left' }} onClick={() => open(n)}>
-          <div style={{ fontSize: 14.5, fontWeight: 700 }}>{n.title}</div>
-          <div style={{ fontSize: 12.5, color: read ? 'var(--muted-3)' : 'var(--muted-2)', marginTop: 3 }}>{[when(n), n.body].filter(Boolean).join(' · ')}</div>
-        </button>
-        {(n.kind === 'deadline' || n.kind === 'task') && !read && n.refId && (
-          <button type="button" className="chip soft" style={{ fontSize: 12, padding: '8px 13px', alignSelf: 'center' }} onClick={() => snooze(n)}>Snooze 2h</button>
-        )}
-      </div>
-    )
-  }
+  const from = (n: AppNotification) => (n.kind === 'nudge' || n.kind === 'partner' ? `From ${partnerName}` : KIND[n.kind])
 
   // Lock-screen preview: the next reminder, as it would arrive.
   const preview = me.role === 'leo'
     ? (() => {
-        const r = routinesOn(data, today).find((x) => x.reminder.enabled && x.scheduledTime && minutesOf(routineTime(x)) > nowMinutes())
-        return r ? { title: `${r.name} starts in ${r.reminder.minutesBefore} minutes`, body: stepsOn(r, today).map((s, k) => (k ? s.title.toLowerCase() : s.title)).join(', ') } : null
+        const left = dayScore(data.trackItems, checkedSet(Object.values(data.trackChecks)), today)
+        return left.total > left.done ? { title: `${left.total - left.done} left on today’s list`, body: `${me.name}, any tick counts.` } : null
       })()
     : (() => {
         const t = tasksOn(data, today).find((x) => !x.completed && x.reminderAt && x.reminderAt > dt(today, hhmm(nowMinutes())))
@@ -75,23 +61,38 @@ export function Notifications() {
   return (
     <main className="screen">
       <div className="pad top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="title-30">Notifications</h1>
-        <Link to="/notifications/settings" style={{ fontSize: 13, fontWeight: 800, color: 'var(--gold-text)' }}>Settings</Link>
+        <h1 className="display" style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.03em', margin: 0 }}>Notifications</h1>
+        <button type="button" onClick={() => navigate('/notifications/settings')} style={{ fontSize: 13, fontWeight: 800, color: 'var(--gold-text)' }}>Settings</button>
       </div>
-      <div className="pad"><NotifyPrompt /></div>
-      <div className="pad" style={{ paddingTop: 22, display: 'flex', flexDirection: 'column' }}>
-        <div className="label">Today</div>
-        {todayList.length === 0 && <div style={{ padding: '16px 0', fontSize: 14, color: 'var(--muted-2)' }}>Nothing yet today.</div>}
-        {todayList.map((n, i) => row(n, i === todayList.length - 1 && earlier.length === 0))}
-        {earlier.length > 0 && <div className="label" style={{ marginTop: 18 }}>Earlier</div>}
-        {earlier.map((n, i) => row(n, i === earlier.length - 1))}
+      <div className="pad" style={{ paddingTop: 16, display: 'flex', flexDirection: 'column' }}>
+        {inbox.length === 0 && <div style={{ padding: '16px 0', fontSize: 14, color: 'var(--muted-2)' }}>Nothing yet. Reminders and anything from {partnerName} land here.</div>}
+        {inbox.map((n) => {
+          const isRead = n.status === 'read'
+          const acts = actions(n)
+          return (
+            <div key={n.id} style={{ display: 'flex', gap: 13, padding: '16px 0', borderBottom: '1px solid var(--divider)', opacity: isRead ? 0.6 : 1 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 6, flex: '0 0 auto', background: isRead ? 'var(--dot-read)' : DOT[n.kind] }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }}>{n.kind === 'nudge' ? `${partnerName} sent a reminder: “${n.title}”` : n.title}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--muted-2)', marginTop: 3 }}>{[when(n), n.body && n.kind !== 'nudge' ? n.body : from(n)].filter(Boolean).join(' · ')}</div>
+                {acts.length > 0 && (
+                  <div style={{ display: 'flex', gap: 7, marginTop: 11 }}>
+                    {acts.map(([label, run]) => (
+                      <button key={label} type="button" onClick={run} style={{ padding: '8px 13px', borderRadius: 99, background: 'var(--chip-alt)', fontSize: 12, fontWeight: 700, color: 'var(--chip-suggest-text)' }}>{label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
       {preview && (
         <div className="pad" style={{ paddingTop: 28 }}>
-          <div className="label" style={{ marginBottom: 14 }}>Next on the lock screen</div>
-          <div style={{ borderRadius: 22, padding: '16px 17px', background: 'var(--ink)', color: 'var(--paper)' }}>
+          <Label style={{ marginBottom: 14 }}>On the lock screen</Label>
+          <div style={{ borderRadius: 14, padding: '16px 17px', background: 'var(--ink)', color: 'var(--paper)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <svg width="18" height="18" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="var(--gold)" /><path d="M18 9c3.9 4 6.8 7.3 6.8 11.3A6.8 6.8 0 0 1 18 27a6.8 6.8 0 0 1-6.8-6.7c0-4 2.9-7.3 6.8-11.3Z" fill="var(--on-gold)" /></svg>
+              <AppMark size={18} />
               <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--glyph-close)', letterSpacing: '.04em' }}>AURELIO · now</div>
             </div>
             <div style={{ fontSize: 14.5, fontWeight: 800, marginTop: 9 }}>{preview.title}</div>
@@ -99,6 +100,7 @@ export function Notifications() {
           </div>
         </div>
       )}
+      <TaskSheet taskId={open} onClose={() => setOpen(null)} />
     </main>
   )
 }

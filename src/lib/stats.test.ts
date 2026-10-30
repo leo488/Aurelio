@@ -9,7 +9,7 @@ const task = (date: string | undefined, completed: boolean, extra: Partial<Task>
   id: `t${n++}`, userId: 'sonia', title: 'x', date, priority: 'medium', completed, createdAt: '1', updatedAt: '1', ...extra,
 })
 
-describe('Sonia’s performance', () => {
+describe('Soniya’s performance', () => {
   test('planning streak counts days with 60%+ done and skips empty days', () => {
     const tasks = [
       task(addDays(T, -1), true), task(addDays(T, -1), true),

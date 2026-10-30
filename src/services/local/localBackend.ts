@@ -48,6 +48,11 @@ export const localBackend: Backend = {
   activity: collection('activity'),
   settings: collection('settings'),
   statuses: collection('statuses'),
+  goals: collection('goals'),
+  trackItems: collection('trackItems'),
+  trackChecks: collection('trackChecks'),
+  notes: collection('notes'),
+  journal: collection('journal'),
 }
 
 /** Write a whole dataset at once (demo seed, tests). */

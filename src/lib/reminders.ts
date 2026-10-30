@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { completionFor, dayProgress, routinesOn, routineTime } from '../data/select'
 import { useData } from '../data/store'
 import type { AppNotification, User } from '../data/types'
 import { addDays, logicalToday, minutesOf, nowMinutes, toDate } from './date'
-import { progress, stepsOn } from './streak'
+import { promptFor } from './journalPrompts'
+import { checkedSet, dayScore } from './track'
 
 // Reminders are worked out from the records themselves (a routine's reminder settings, a task's
 // reminder time), so editing or deleting the record is all it takes to change them. When one is
@@ -22,8 +22,8 @@ async function show(title: string, body: string | undefined, tag: string) {
   if (!notificationsSupported() || Notification.permission !== 'granted') return
   try {
     const reg = await navigator.serviceWorker?.getRegistration()
-    if (reg) await reg.showNotification(title, { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' })
-    else new Notification(title, { body, tag, icon: '/icons/icon-192.png' })
+    if (reg) await reg.showNotification(title, { body, tag, icon: `${import.meta.env.BASE_URL}icons/icon-192.png`, badge: `${import.meta.env.BASE_URL}icons/icon-192.png` })
+    else new Notification(title, { body, tag, icon: `${import.meta.env.BASE_URL}icons/icon-192.png` })
   } catch {
     /* the inbox still has it */
   }
@@ -56,30 +56,30 @@ export function checkReminders(user: User, now = new Date()) {
   if (quiet) return
 
   if (user.role === 'leo') {
-    if (settings.notif.reminders) {
-      for (const r of routinesOn(s, today)) {
-        if (!r.reminder.enabled || !r.scheduledTime) continue
-        const start = minutesOf(routineTime(r))
-        const p = progress(r, today, completionFor(s, r, today))
-        if (p.done === p.total) continue
-        if (mins >= start - r.reminder.minutesBefore && mins < start) {
-          const left = start - mins
-          fire(`routine|${r.id}|${today}`, {
-            kind: 'routine', title: `${r.name} starts in ${left} minute${left === 1 ? '' : 's'}`,
-            body: stepsOn(r, today).map((x) => x.title).join(', '), refType: 'routine', refId: r.id,
-          })
-        }
-      }
-    }
-    // Evening catch-up when routines are still open.
-    const day = dayProgress(s, today)
+    // The evening check-in, once at 20:00, while today's list is still open; then today's question.
+    const day = dayScore(s.trackItems, checkedSet(Object.values(s.trackChecks)), today)
     const left = day.total - day.done
-    if (settings.notif.reminders && mins >= 20 * 60 && left > 0) {
-      fire(`catchup|${today}`, { kind: 'catchup', title: `${left} routine${left === 1 ? '' : 's'} left today`, body: `${user.name}, there’s still time.` })
+    if (settings.notif.deadlines && mins >= 20 * 60 && left > 0) {
+      fire(`catchup|${today}`, { kind: 'catchup', title: `${left} left on today’s list`, body: `${user.name}, any tick counts.` })
+    }
+    if (settings.notif.reminders && mins >= 21 * 60 + 30 && !s.journal.some((e) => e.date === today && e.body.trim())) {
+      fire(`journal|${today}`, { kind: 'catchup', title: 'Today’s question', body: promptFor(today) })
     }
   }
 
-  // Task reminders and deadline warnings (anyone with tasks; in practice Sonia).
+  // Soniya's morning summary: today's plan and anything overdue.
+  if (user.role === 'sonia' && settings.notif.summary !== false && mins >= 8 * 60 && mins < 12 * 60) {
+    const planned = s.tasks.filter((t) => t.date === today && !t.completed).length
+    const overdue = s.tasks.filter((t) => !t.completed && t.date && t.date < today).length
+    if (planned || overdue) {
+      fire(`summary|${today}`, {
+        kind: 'task', title: planned ? `${planned} task${planned === 1 ? '' : 's'} planned today` : 'Nothing planned today yet',
+        body: overdue ? `${overdue} overdue · Morning summary` : 'Morning summary',
+      })
+    }
+  }
+
+  // Task reminders and deadline warnings (anyone with tasks; in practice Soniya).
   for (const t of s.tasks) {
     if (t.completed) continue
     if (settings.notif.reminders && t.reminderAt && t.reminderAt.slice(0, 10) <= today && toDate(t.reminderAt) <= now && t.reminderAt.slice(0, 10) >= addDays(today, -1)) {
@@ -87,6 +87,9 @@ export function checkReminders(user: User, now = new Date()) {
         kind: 'task', title: t.startTime && t.date === today ? `${t.title} at ${t.startTime}` : t.title,
         body: t.notes ?? 'Tap to open your day', refType: 'task', refId: t.id,
       })
+    }
+    if (settings.notif.deadlines && t.date && t.date < today && mins >= 8 * 60) {
+      fire(`overdue|${t.id}|${t.date}`, { kind: 'deadline', title: `${t.title} is overdue`, body: 'Morning summary', refType: 'task', refId: t.id })
     }
     if (settings.notif.deadlines && t.deadline && t.date && mins >= 9 * 60) {
       for (const [d, label] of [[addDays(t.date, -2), 'is due in two days'], [t.date, 'is due today']] as const) {

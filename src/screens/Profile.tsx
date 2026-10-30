@@ -1,38 +1,121 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
-import { StreakMark } from '../components/controls'
 import { Ember } from '../components/Ember'
-import { Icon, ROUTINE_TINT } from '../components/Icon'
-import { useMe } from '../data/session'
+import { flash } from '../components/Toast'
+import { Label, RemindSheet, useCheer, usePartnerLine } from '../components/ui'
+import { resetLocalDemo } from '../boot'
+import { useAuth, useMe } from '../data/session'
 import { useData } from '../data/store'
-import { logicalToday, WEEKDAY_LETTER, weekday } from '../lib/date'
-import { leoStats, soniaStats } from '../lib/stats'
+import type { Role } from '../data/types'
+import { addDays, fromISO, logicalToday, MONTHS, weekday, WEEKDAY_LETTER, weekKey } from '../lib/date'
+import { soniaStats } from '../lib/stats'
+import { checkedSet, dayScore, trackStreak, weekSummary } from '../lib/track'
+import { backendKind, getAuth } from '../services'
 
-const Stat = ({ value, caption }: { value: React.ReactNode; caption: string }) => (
-  <div>
-    <div className="display" style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1 }}>{value}</div>
-    <div style={{ fontSize: 11, color: 'var(--stat-caption)', fontWeight: 700, marginTop: 4 }}>{caption}</div>
+const Cell = ({ value, caption, bottom }: { value: React.ReactNode; caption: string; bottom?: boolean }) => (
+  <div style={{ padding: '14px 0', borderTop: '1px solid var(--divider)', borderBottom: bottom ? '1px solid var(--divider)' : undefined }}>
+    <div className="display" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.03em' }}>{value}</div>
+    <div style={{ fontSize: 12, color: 'var(--muted-2)', fontWeight: 700, marginTop: 2 }}>{caption}</div>
   </div>
 )
 
-const Grid = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', rowGap: 22, columnGap: 12 }}>{children}</div>
+const Big = ({ streak, unit, line }: { streak: number; unit: string; line: string }) => (
+  <div className="pad" style={{ paddingTop: 26, display: 'flex', alignItems: 'center', gap: 16 }}>
+    <Ember streak={streak} size={58} />
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+        <div className="display" style={{ fontSize: 44, fontWeight: 800, letterSpacing: '-.05em', lineHeight: 0.95 }}>{streak}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--muted-2)' }}>{unit}</div>
+      </div>
+      <div style={{ fontSize: 12.5, color: 'var(--muted-1)', marginTop: 5 }}>{line}</div>
+    </div>
+  </div>
 )
 
-/** Each person's profile is their performance, worked out from their own records. */
+/** Seven bars, today in gold. `values` are 0..max. */
+function Bars({ days, values, max, color, showValues }: { days: string[]; values: number[]; max: number; color: string; showValues?: boolean }) {
+  return (
+    <div style={{ display: 'flex', gap: 9, alignItems: 'flex-end', height: 118, marginTop: 14 }}>
+      {days.map((d, i) => (
+        <div key={d} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 7, height: '100%' }} title={d}>
+          {showValues && <div style={{ fontSize: 10.5, color: 'var(--chip-text)', fontWeight: 800 }}>{values[i]}</div>}
+          <div style={{ width: '100%', borderRadius: 7, height: Math.max(6, Math.round((values[i] / max) * 92)), background: i === days.length - 1 ? 'var(--gold)' : color, transition: 'height .7s cubic-bezier(.2,.8,.2,1)', animation: 'bar-grow .7s cubic-bezier(.2,.8,.2,1)', transformOrigin: 'bottom' }} />
+          <div style={{ fontSize: 10.5, color: 'var(--muted-3)', fontWeight: 800 }}>{WEEKDAY_LETTER[weekday(d)]}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Each person's profile: their own performance, the other person's day as a number, and settings. */
 export function Profile() {
-  const { me, name, partnerName } = useMe()
+  const { me, name, partnerRole, partnerName } = useMe()
+  const navigate = useNavigate()
+  const [remind, setRemind] = useState(false)
+  const cheer = useCheer()
+  const partnerLine = usePartnerLine()
+  const local = backendKind() === 'local'
+
+  const signOut = async () => {
+    await getAuth().signOut()
+    useAuth.getState().setSession(null)
+    useData.getState().clear()
+  }
+  const lock = async () => {
+    await signOut()
+    navigate('/', { replace: true })
+  }
+  const changePin = async (role: Role) => {
+    await signOut()
+    navigate('/', { replace: true, state: { reset: role } })
+  }
+  const row = (title: string, onClick: () => void, opts?: { last?: boolean; clay?: boolean }) => (
+    <button type="button" onClick={onClick}
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: opts?.last ? undefined : '1px solid var(--divider)', width: '100%', textAlign: 'left' }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: opts?.clay ? 'var(--clay)' : undefined }}>{title}</div>
+      {!opts?.clay && <div style={{ fontSize: 14, color: 'var(--muted-2)' }}>›</div>}
+    </button>
+  )
+
   return (
     <main className="screen" style={{ background: 'var(--wash-settings)' }}>
       <div className="pad" style={{ paddingTop: 'calc(var(--safe-top) + 20px)', display: 'flex', alignItems: 'center', gap: 16 }}>
         <Avatar user={me.role} size={62} />
-        <div style={{ flex: 1 }}>
+        <div>
           <h1 className="display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.03em', margin: 0 }}>{name}</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-2)', marginTop: 2 }}>Paired with {partnerName}</div>
+          <div style={{ fontSize: 13, color: 'var(--muted-2)', marginTop: 2, fontWeight: 600 }}>{me.role === 'leo' ? 'Weekly tracker and journal' : 'Day planner'}</div>
         </div>
-        <Link to="/settings" aria-label="Settings" style={{ padding: 4, lineHeight: 0 }}><Icon name="gear" size={22} stroke={1.7} /></Link>
       </div>
+
       {me.role === 'leo' ? <LeoPerformance /> : <SoniaPerformance />}
+
+      <div className="pad" style={{ paddingTop: 26 }}>
+        <Label>{partnerName} today</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0' }}>
+          <Avatar user={partnerRole} size={34} />
+          <div style={{ flex: 1, fontSize: 14, color: 'var(--chip-suggest-text)' }}>{partnerLine}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 9 }}>
+          <button type="button" onClick={() => setRemind(true)} style={{ flex: 1, padding: 14, borderRadius: 10, background: 'var(--ink)', color: 'var(--paper)', fontSize: 14, fontWeight: 800 }}>Send a reminder</button>
+          <button type="button" onClick={cheer} style={{ flex: 1, padding: 14, borderRadius: 10, background: 'var(--chip)', color: 'var(--chip-suggest-text)', fontSize: 14, fontWeight: 800 }}>Send a cheer</button>
+        </div>
+      </div>
+
+      <div className="pad" style={{ paddingTop: 26 }}>
+        <Label style={{ marginBottom: 2 }}>Settings</Label>
+        {row('Notifications', () => navigate('/notifications'))}
+        {row('Reminder settings', () => navigate('/notifications/settings'))}
+        {row('Change PIN', () => void changePin(me.role))}
+        {local && row('Reset demo data', () => {
+          if (!window.confirm('Reset all demo data on this device?')) return
+          resetLocalDemo()
+          void useData.getState().load(me)
+          flash('Demo data restored')
+        })}
+        {row('Sign out', () => void lock(), { last: true, clay: true })}
+      </div>
+      <RemindSheet open={remind} onClose={() => setRemind(false)} />
     </main>
   )
 }
@@ -40,104 +123,68 @@ export function Profile() {
 function LeoPerformance() {
   const data = useData()
   const today = logicalToday()
-  const s = leoStats(data, today)
-  const colour = { full: 'var(--olive)', partial: 'var(--olive-pale)', missed: 'var(--heat-missed)', skipped: 'var(--heat-future)', none: 'var(--heat-future)' }
+  const checked = checkedSet(Object.values(data.trackChecks))
+  const st = trackStreak(data.trackItems, checked, today)
+  const week = weekSummary(data.trackItems, checked, weekKey(today), today)
+  const now = dayScore(data.trackItems, checked, today)
+  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6))
+  const values = days.map((d) => Math.round(dayScore(data.trackItems, checked, d).pct * 100))
   return (
     <>
-      <div className="pad" style={{ paddingTop: 30, display: 'flex', alignItems: 'center', gap: 18 }}>
-        <Ember streak={s.current} size={64} flicker />
-        <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <div className="display" style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-.05em', lineHeight: 0.9 }}>{s.current}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--muted-2)' }}>day streak</div>
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--muted-1)', marginTop: 8 }}>A day counts when every routine due that day is done.</div>
-        </div>
+      <Big streak={st.current} unit="day streak" line={`Days with at least one tick · longest ${st.longest}`} />
+      <div className="pad" style={{ paddingTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+        <Cell value={`${Math.round(now.pct * 100)}%`} caption="Today" />
+        <Cell value={`${Math.round(week.pct * 100)}%`} caption="This week" />
+        <Cell value={st.days} caption="Days with a tick" bottom />
+        <Cell value={data.journal.filter((e) => e.body.trim()).length} caption="Journal entries" bottom />
       </div>
-      <div className="pad" style={{ paddingTop: 28 }}>
-        <Grid>
-          <Stat value={s.longest} caption="Longest streak" />
-          <Stat value={s.routinesCompleted} caption="Routines completed" />
-          <Stat value={s.completedDays} caption="Full days" />
-          <Stat value={`${s.today.rate}%`} caption={`Today · ${s.today.done}/${s.today.total}`} />
-          <Stat value={`${s.weekly}%`} caption="This week" />
-          <Stat value={`${s.monthly}%`} caption="Last 30 days" />
-        </Grid>
-      </div>
-      <div className="pad" style={{ paddingTop: 30 }}>
-        <div className="label" style={{ marginBottom: 12 }}>Last 7 days</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 7 }}>
-          {s.week.map((d) => (
-            <div key={d.date} style={{ textAlign: 'center' }}>
-              <div title={d.date} style={{ aspectRatio: '1', borderRadius: 7, background: d.date === today && d.outcome !== 'full' ? 'var(--gold)' : colour[d.outcome] }} />
-              <div style={{ fontSize: 10, color: 'var(--muted-3)', fontWeight: 800, marginTop: 6 }}>{WEEKDAY_LETTER[weekday(d.date)]}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="pad" style={{ paddingTop: 28 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <div className="label">Routines</div>
-          <Link to="/streak" style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--gold-text)' }}>Consistency</Link>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 6 }}>
-          {s.perRoutine.map(({ routine: r, current, longest, completedDays, month }) => (
-            <Link key={r.id} to={`/routines/${r.id}`} className="list-row" style={{ opacity: r.active ? 1 : 0.55 }}>
-              <Icon name={r.icon} size={21} color={ROUTINE_TINT[r.icon]} />
-              <div style={{ flex: 1 }}>
-                <div className="row-title">{r.name}</div>
-                <div className="meta">{month}% last 30 days · best {longest} · {completedDays} done</div>
-              </div>
-              <StreakMark n={current} />
-            </Link>
-          ))}
-        </div>
+      <div className="pad" style={{ paddingTop: 24 }}>
+        <Label>Last seven days</Label>
+        <Bars days={days} values={values} max={100} color="var(--gold)" />
       </div>
     </>
   )
 }
 
+const SHADES = ['var(--heat-0)', 'var(--heat-1)', 'var(--heat-2)', 'var(--heat-3)', 'var(--heat-4)']
+
 function SoniaPerformance() {
   const data = useData()
   const today = logicalToday()
   const s = soniaStats(data, today)
-  const max = Math.max(1, ...s.week.map((d) => d.total))
+  const days = s.week.map((d) => d.date)
+  const values = s.week.map((d) => d.done)
+  const month = today.slice(0, 7)
+  const first = fromISO(`${month}-01`)
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
+  const doneOn = (iso: string) => data.tasks.filter((t) => t.date === iso && t.completed).length
   return (
     <>
-      <div className="pad" style={{ paddingTop: 30 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <div className="display" style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-.05em', lineHeight: 0.9 }}>{s.today.rate}%</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--muted-2)' }}>of today done</div>
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--muted-1)', marginTop: 8 }}>{s.today.done} of {s.today.total} tasks today{s.streak ? ` · ${s.streak}-day planning streak` : ''}</div>
+      <Big streak={s.streak} unit="day planning streak" line="Days you finished at least 60% of your plan" />
+      <div className="pad" style={{ paddingTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+        <Cell value={s.today.done} caption="Completed today" />
+        <Cell value={s.today.total - s.today.done} caption="Remaining today" />
+        <Cell value={`${s.today.rate}%`} caption="Daily completion" bottom />
+        <Cell value={s.completed} caption="Tasks completed" bottom />
       </div>
-      <div className="pad" style={{ paddingTop: 28 }}>
-        <Grid>
-          <Stat value={s.completed} caption="Tasks completed" />
-          <Stat value={s.remaining} caption="Tasks remaining" />
-          <Stat value={s.streak} caption="Planning streak" />
-          <Stat value={`${s.weekly.rate}%`} caption={`This week · ${s.weekly.done}/${s.weekly.total}`} />
-          <Stat value={s.activeDays} caption="Planned days, 30d" />
-          <Stat value={s.plannedAhead} caption="Next 7 days" />
-        </Grid>
+      <div className="pad" style={{ paddingTop: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <Label>Weekly productivity</Label>
+          <div style={{ fontSize: 12.5, color: 'var(--muted-2)', fontWeight: 700 }}>{s.weekly.done} done</div>
+        </div>
+        <Bars days={days} values={values} max={Math.max(6, ...values)} color="var(--iris)" showValues />
       </div>
-      <div className="pad" style={{ paddingTop: 30 }}>
-        <div className="label" style={{ marginBottom: 14 }}>Weekly productivity</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 9, alignItems: 'end', height: 120 }}>
-          {s.week.map((d) => (
-            <div key={d.date} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }} title={`${d.done} of ${d.total}`}>
-              <div style={{ background: 'var(--chip-alt-2)', borderRadius: 8, height: `${(d.total / max) * 100}%`, minHeight: 6, display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                <div style={{ width: '100%', height: `${d.total ? (d.done / d.total) * 100 : 0}%`, background: d.date === today ? 'var(--gold)' : 'var(--olive)', borderRadius: 8 }} />
-              </div>
-            </div>
-          ))}
+      <div className="pad" style={{ paddingTop: 24 }}>
+        <Label>Calendar activity · {MONTHS[first.getMonth()]}</Label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginTop: 14 }}>
+          {Array.from({ length: weekday(`${month}-01`) }, (_, i) => <div key={`b${i}`} style={{ aspectRatio: '1' }} />)}
+          {Array.from({ length: daysInMonth }, (_, i) => {
+            const iso = `${month}-${String(i + 1).padStart(2, '0')}`
+            const bg = iso > today ? 'var(--heat-future)' : SHADES[Math.min(4, doneOn(iso))]
+            return <div key={iso} title={iso} style={{ aspectRatio: '1', borderRadius: 6, background: bg, boxShadow: iso === today ? 'inset 0 0 0 1.5px var(--ink)' : undefined }} />
+          })}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 9, marginTop: 8 }}>
-          {s.week.map((d) => <div key={d.date} style={{ fontSize: 10, color: 'var(--muted-3)', fontWeight: 800, textAlign: 'center' }}>{WEEKDAY_LETTER[weekday(d.date)]}</div>)}
-        </div>
-        <div style={{ fontSize: 12.5, color: 'var(--muted-2)', lineHeight: 1.6, marginTop: 16 }}>
-          The planning streak counts days in a row where you finished at least 60% of what you planned. Days with nothing planned don’t count against you.
-        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted-2)', marginTop: 10 }}>Darker means more done. Future days stay blank until they happen.</div>
       </div>
     </>
   )
