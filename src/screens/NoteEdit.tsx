@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Toggle } from '../components/controls'
-import { NoteMeta, NoteText, photosOf, toggleLine } from '../components/notes'
+import { checklist, NoteMeta, NoteText, photosOf, toggleLine } from '../components/notes'
 import { Ori } from '../components/Ori'
 import { flash } from '../components/Toast'
 import { FormHeader } from '../components/ui'
@@ -43,16 +43,25 @@ function Photos({ photos, onRemove }: { photos: string[]; onRemove?: (i: number)
 function Viewer({ note, onEdit }: { note: Note; onEdit: () => void }) {
   const navigate = useNavigate()
   const saveNote = useData((s) => s.saveNote)
+  const goals = checklist(note.body)
   return (
     <main className="screen no-bar" style={{ background: 'var(--wash-default)' }}>
       <div className="pad top-12" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button type="button" aria-label="Back" onClick={() => navigate(-1)} style={{ fontSize: 22, lineHeight: 1, color: 'var(--ink)', padding: '2px 8px 2px 0' }}>‹</button>
-        <button type="button" onClick={onEdit} style={{ fontSize: 15, fontWeight: 800, color: 'var(--gold-text)' }}>Edit</button>
+        <button type="button" className="glass-btn" aria-label="Back" onClick={() => navigate(-1)} style={{ fontSize: 22 }}>‹</button>
+        <button type="button" className="glass-pill" onClick={onEdit} style={{ color: 'var(--gold-text)' }}>Edit</button>
       </div>
       <div className="pad" style={{ paddingTop: 14 }}>
         <Photos photos={photosOf(note)} />
         {note.title && <h1 className="display" style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.02em', margin: '18px 0 0' }}>{note.title}</h1>}
         <NoteMeta note={note} style={{ marginTop: 6 }} />
+        {goals && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: goals.done === goals.total ? 'var(--gold-text)' : 'var(--muted-2)' }}>
+              {goals.done === goals.total ? 'All goals done' : `${goals.done} of ${goals.total} goals done`}
+            </div>
+            <div className="keep-bar" aria-hidden="true"><span style={{ width: `${(goals.done / goals.total) * 100}%` }} /></div>
+          </div>
+        )}
         <div style={{ fontSize: 15.5, marginTop: 10 }}>
           <NoteText body={note.body} onToggle={(i) => saveNote({ ...note, body: toggleLine(note.body, i) })} />
         </div>

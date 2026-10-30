@@ -32,16 +32,19 @@ const Pin = () => (
 const ITEM = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/
 const BOX = /^\[( |x|X)\]\s*(.*)$/
 
-/** Flip the "[ ]" / "[x]" box on one line of a note's text. */
+/** Tick or untick one goal of a note: flips its "[ ]" / "[x]" box; a plain "- " line becomes ticked. */
 export function toggleLine(body: string, index: number) {
   const lines = body.split('\n')
-  lines[index] = lines[index].replace(/\[( |x|X)\]/, (_, c: string) => (c === ' ' ? '[x]' : '[ ]'))
+  const line = lines[index]
+  const m = line.match(ITEM)
+  if (m && !BOX.test(m[1])) lines[index] = line.slice(0, line.length - m[1].length) + `[x] ${m[1]}`
+  else lines[index] = line.replace(/\[( |x|X)\]/, (_, c: string) => (c === ' ' ? '[x]' : '[ ]'))
   return lines.join('\n')
 }
 
 /**
  * A note's text with "- " lines as bullets and "- [ ]" / "- [x]" as boxes. Cut after `lines` lines.
- * With `onToggle`, boxes can be ticked; it gets the line's index in `body`.
+ * With `onToggle`, every list line is a goal to tick and strike through; it gets the line's index in `body`.
  */
 export function NoteText({ body, lines, onToggle }: { body: string; lines?: number; onToggle?: (index: number) => void }) {
   const all = body.split('\n').map((text, i) => ({ text, i })).filter((l, k, a) => l.text.trim() || (k > 0 && a[k - 1].text.trim()))
@@ -54,7 +57,7 @@ export function NoteText({ body, lines, onToggle }: { body: string; lines?: numb
           const box = m[1].match(BOX)
           const done = !!box && box[1] !== ' '
           const label = <span style={done ? { textDecoration: 'line-through', color: 'var(--muted-4)' } : undefined}>{box ? box[2] : m[1]}</span>
-          if (box && onToggle) {
+          if (onToggle) {
             return (
               <button key={i} type="button" className="note-li note-check" aria-pressed={done} onClick={() => onToggle(i)}>
                 <span className={done ? 'note-box on' : 'note-box'} aria-hidden="true">
@@ -76,16 +79,23 @@ export function NoteText({ body, lines, onToggle }: { body: string; lines?: numb
   )
 }
 
-/** How many of a note's boxes are ticked, when it has any. */
+/** A note's goals (its list lines) and how many are ticked, when it has any. */
 export function checklist(body: string) {
-  const boxes = body.split('\n').map((l) => l.match(ITEM)?.[1].match(BOX)).filter(Boolean)
-  return boxes.length ? { done: boxes.filter((b) => b![1] !== ' ').length, total: boxes.length } : null
+  const items = body.split('\n').map((l) => l.match(ITEM)?.[1]).filter((x): x is string => x !== undefined)
+  return items.length ? { done: items.filter((i) => /^\[(x|X)\]/.test(i)).length, total: items.length } : null
 }
 
-/** A note in the grid, like a Keep card: its photo on top, then the title and the first lines. */
+/** The first line that isn't a goal, for a card's one-line summary. */
+const firstLine = (body: string) => body.split('\n').map((l) => l.trim()).find((l) => l && !ITEM.test(l)) ?? ''
+
+/** What a search matches: the title, the text and the place. */
+export const matches = (n: Note, q: string) => !q || `${n.title}\n${n.body}\n${n.place ?? ''}`.toLowerCase().includes(q.toLowerCase())
+
+/** A note in the grid, like a Keep card: a strip of its photo, the title, a one-line summary. */
 export function NoteCard({ note: n }: { note: Note }) {
   const photos = photosOf(n)
   const list = checklist(n.body)
+  const line = firstLine(n.body)
   return (
     <Link to={`/notes/${n.id}`} className="card keep-card">
       {photos.length > 0 && (
@@ -95,9 +105,13 @@ export function NoteCard({ note: n }: { note: Note }) {
         </div>
       )}
       <div className="keep-body">
-        {n.title && <div className="keep-title">{n.title}</div>}
-        <NoteText body={n.body} lines={photos.length ? 4 : 7} />
-        {list && <div className="keep-progress">{list.done}/{list.total} done</div>}
+        <div className="keep-title">{n.title || line || 'Untitled'}</div>
+        {list ? (
+          <>
+            <div className="keep-sum">{list.done === list.total ? `All ${list.total} goals done` : `${list.total} goals · ${list.done} done`}</div>
+            <div className="keep-bar" aria-hidden="true"><span style={{ width: `${(list.done / list.total) * 100}%` }} /></div>
+          </>
+        ) : (n.title && line && <div className="keep-sum">{line}</div>)}
         <NoteMeta note={n} style={{ marginTop: 8 }} />
       </div>
     </Link>
@@ -111,7 +125,7 @@ export function JournalCard({ entry: e, date, onOpen }: { entry: JournalEntry; d
       <div className="keep-body">
         <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.08em', color: 'var(--gold-text)' }}>{date.toUpperCase()}</div>
         <div className="keep-title" style={{ marginTop: 5 }}>{e.prompt}</div>
-        <div className="note-text" style={{ display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.body}</div>
+        <div className="keep-sum">{e.body}</div>
       </div>
     </button>
   )

@@ -105,8 +105,8 @@ export function Week() {
         <div className="eyebrow">{range(monday).toUpperCase()} · {monday.slice(0, 4)}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <h1 className="display" style={{ flex: 1, fontSize: 34, fontWeight: 700, letterSpacing: '-.033em', margin: 0 }}>Week {n}</h1>
-          <button type="button" className="week-nav" aria-label="Previous week" disabled={key <= first} onClick={() => go(lastKey)}>‹</button>
-          <button type="button" className="week-nav" aria-label="Next week" disabled={current} onClick={() => go(nextKey)}>›</button>
+          <button type="button" className="glass-btn" aria-label="Previous week" disabled={key <= first} onClick={() => go(lastKey)}>‹</button>
+          <button type="button" className="glass-btn" aria-label="Next week" disabled={current} onClick={() => go(nextKey)}>›</button>
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 4, fontWeight: 600 }}>
           {Math.round(sum.pct * 100)}% done{current ? ` · ${daysLeft === 0 ? 'last day' : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}` : ''}
