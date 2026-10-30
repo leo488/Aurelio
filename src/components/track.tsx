@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useData } from '../data/store'
 import type { TrackItem, TrackSlot } from '../data/types'
-import { WEEKDAY_LONG, WEEKDAY_SHORT, weekday } from '../lib/date'
-import { checkId, level, SLOTS, weekList } from '../lib/track'
+import { addDays, mondayOf, WEEKDAY_LETTER, WEEKDAY_LONG, WEEKDAY_SHORT, weekday } from '../lib/date'
+import { checkId, checkedSet, dayScore, level, SLOTS, weekList } from '../lib/track'
 import { type DragItem, type DragState, type DropTarget, useDrag } from '../lib/useDrag'
 import { Check } from './controls'
 
@@ -49,6 +49,70 @@ export function DayStrip({ days, today, selected, onPick }: { days: { date: stri
           </button>
         )
       })}
+    </div>
+  )
+}
+
+const tickMark = <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+
+/**
+ * The whole week at once, as Leo kept it in his journal: every item down the side, Monday to Sunday
+ * across, a box to tick for each day. Sub to-dos sit indented under their item. Future days wait.
+ */
+export function WeekGrid({ week, today }: { week: string; today: string }) {
+  const data = useData()
+  const monday = mondayOf(week)
+  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+  const { top, subs } = weekList(data.trackItems, week)
+  const checked = checkedSet(Object.values(data.trackChecks))
+
+  const row = (item: TrackItem, sub?: boolean) => (
+    <div key={item.id} className={sub ? 'track-row sub' : 'track-row'}>
+      <div className="track-title">{item.title}</div>
+      {days.map((d, i) => {
+        const on = checked.has(checkId(item.id, d))
+        const future = d > today
+        return (
+          <button key={d} type="button" disabled={future} onClick={() => data.toggleCheck(item.id, d)} aria-pressed={on}
+            aria-label={`${item.title}, ${WEEKDAY_LONG[i]}${on ? ', done' : ''}`}
+            className={`tick${sub ? ' sm' : ''}${on ? ' on' : ''}${d === today ? ' now' : ''}${future ? ' future' : ''}`}>
+            {on && tickMark}
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  return (
+    <div className="card" style={{ padding: '10px 12px 12px 14px', marginTop: 14 }}>
+      <div className="track-row head" aria-hidden="true">
+        <div />
+        {days.map((d, i) => (
+          <div key={d} style={{ textAlign: 'center', color: d === today ? 'var(--gold-text)' : 'var(--muted-3)' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800 }}>{WEEKDAY_LETTER[i]}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, marginTop: 2, color: d === today ? 'var(--gold-text)' : d > today ? 'var(--muted-4)' : 'var(--muted-1)' }}>{Number(d.slice(8))}</div>
+          </div>
+        ))}
+      </div>
+      {SLOTS.map(([slot, label]) => {
+        const rows = top.filter((i) => i.slot === slot)
+        return rows.length ? <div key={slot}><SlotLabel>{label}</SlotLabel>{rows.map((i) => [row(i), ...(subs.get(i.id) ?? []).map((s) => row(s, true))])}</div> : null
+      })}
+      {top.length === 0 && <div style={{ fontSize: 13.5, color: 'var(--muted-2)', padding: '16px 0' }}>Nothing on this week’s list.</div>}
+      {top.length > 0 && (
+        <div className="track-row foot">
+          <div style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--muted-2)' }}>Each day</div>
+          {days.map((d) => {
+            const s = dayScore(data.trackItems, checked, d)
+            return (
+              <div key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <HeatCell done={s.done} total={s.total} future={d > today} today={d === today} size={22} />
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--muted-3)', minHeight: 11 }}>{d > today ? '' : `${s.done}/${s.total}`}</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

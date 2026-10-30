@@ -196,13 +196,15 @@ a:active { transform: scale(.97); }
 .track-row.foot { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); align-items: start; }
 .track-title { text-align: left; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.25; padding: 4px 0; overflow-wrap: anywhere; }
 .track-title:disabled { cursor: default; }
+.track-row.sub .track-title { padding-left: 12px; font-size: 12.5px; color: var(--muted-1); }
+.tick.sm { width: 22px; height: 22px; border-radius: 7px; justify-self: center; }
 .tick { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--checkbox-off); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--on-gold); transition: background .15s, border-color .15s; }
 .tick.now { border-color: var(--gold); }
 .tick.on { background: var(--gold); border-color: var(--gold); animation: pop-in .18s ease; }
 .tick.future { opacity: .3; }
 .today-item { display: flex; align-items: center; gap: 13px; width: 100%; text-align: left; padding: 9px 0; }
-.seg { display: flex; padding: 3px; border-radius: 12px; background: var(--chip); }
-.seg-tab { flex: 1; padding: 9px 0; border-radius: 9px; font-size: 13.5px; font-weight: 800; color: var(--muted-2); }
+.seg { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--chip); }
+.seg-tab { flex: 1; text-align: center; padding: 10px 12px; border-radius: 9px; font-size: 13.5px; font-weight: 800; color: var(--muted-2); }
 .seg-tab.on { background: var(--ink); color: var(--paper); }
 .day-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .day-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 8px; border-radius: 12px; background: var(--white); color: var(--ink); transition: background .15s, transform .12s; }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Check } from '../components/controls'
 import { Sheet } from '../components/Sheet'
-import { DayStrip, WeekDay } from '../components/track'
+import { DayStrip, WeekDay, WeekGrid } from '../components/track'
 import { Label } from '../components/ui'
 import { useData } from '../data/store'
 import type { WeeklyGoal } from '../data/types'
@@ -27,6 +27,12 @@ function AddField({ value, onChange, onAdd, placeholder, label }: { value: strin
   )
 }
 
+/** Which week view Leo used last, kept on this phone. */
+const VIEW_KEY = 'aurelio:week-view'
+const readView = () => {
+  try { return localStorage.getItem(VIEW_KEY) === 'grid' } catch { return false }
+}
+
 /** A thin gold line where a dragged item would land. */
 const Slot = ({ on, sm }: { on: boolean; sm?: boolean }) => <div className={`drop-slot${sm ? ' sm' : ''}${on ? ' on' : ''}`} aria-hidden="true" />
 
@@ -43,6 +49,11 @@ export function Week() {
   const key = asked && /^\d{4}-W\d{2}$/.test(asked) && asked <= thisWeek ? asked : thisWeek
   const [draft, setDraft] = useState('')
   const [open, setOpen] = useState<string | null>(null)
+  const [grid, setGrid] = useState(() => readView())
+  const setView = (g: boolean) => {
+    setGrid(g)
+    try { localStorage.setItem(VIEW_KEY, g ? 'grid' : 'day') } catch { /* private mode: just this visit */ }
+  }
   const [asking, setAsking] = useState<{ id: string; targetId: string; index?: number } | null>(null)
   const monday = mondayOf(key)
   const first = firstWeek(data.trackItems, today)
@@ -106,6 +117,11 @@ export function Week() {
       {top && <PriorityBanner goal={top} onOpen={() => showGoal(top.id)} />}
 
       <div className="pad" style={{ paddingTop: top ? 14 : 20 }}>
+        <div className="seg" role="tablist" aria-label="Week view" style={{ marginBottom: 14 }}>
+          <button type="button" role="tab" aria-selected={!grid} className={grid ? 'seg-tab' : 'seg-tab on'} onClick={() => setView(false)}>By day</button>
+          <button type="button" role="tab" aria-selected={grid} className={grid ? 'seg-tab on' : 'seg-tab'} onClick={() => setView(true)}>Whole week</button>
+        </div>
+        {grid ? <WeekGrid week={key} today={today} /> : <>
         <DayStrip days={sum.days} today={today} selected={day} onPick={pick} />
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 18 }}>
           <h2 className="display" style={{ flex: 1, fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', margin: 0 }}>
@@ -119,6 +135,7 @@ export function Week() {
           <div className="day-progress" aria-hidden="true"><span style={{ width: `${(dayScore.done / dayScore.total) * 100}%` }} /></div>
         )}
         <WeekDay week={key} date={day} today={today} />
+        </>}
       </div>
 
       <div className="pad" style={{ paddingTop: 28 }}>
