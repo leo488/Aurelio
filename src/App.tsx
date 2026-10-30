@@ -12,7 +12,6 @@ import { Profile } from './screens/Profile'
 import { SoniaToday } from './screens/SoniaToday'
 import { Streak } from './screens/Streak'
 import { Journal } from './screens/Journal'
-import { Notes } from './screens/Notes'
 import { NoteEdit } from './screens/NoteEdit'
 import { Week } from './screens/Week'
 import { TaskForm } from './screens/TaskForm'
@@ -53,7 +52,7 @@ export default function App() {
           <Route path="/week" element={leo(<Week />)} />
           <Route path="/streak" element={leo(<Streak />)} />
           <Route path="/journal" element={leo(<Journal />)} />
-          <Route path="/notes" element={leo(<Notes />)} />
+          <Route path="/notes" element={<Navigate to="/journal?tab=notes" replace />} />
           <Route path="/notes/:id" element={leo(<NoteEdit />)} />
           {/* Routines were retired for the weekly tracker; old links land on the week. */}
           {['/welcome', '/routines', '/routines/*', '/run', '/run/done', '/milestone', '/missed'].map((p) => <Route key={p} path={p} element={<Navigate to="/week" replace />} />)}

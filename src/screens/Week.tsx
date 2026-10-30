@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Check } from '../components/controls'
 import { Sheet } from '../components/Sheet'
-import { TrackAdd, TrackGrid } from '../components/track'
+import { DayStrip, WeekDay } from '../components/track'
 import { Label } from '../components/ui'
 import { useData } from '../data/store'
 import type { WeeklyGoal } from '../data/types'
-import { addDays, diffDays, logicalToday, mondayOf, MONTHS_SHORT, weekKey } from '../lib/date'
+import { addDays, diffDays, logicalToday, mondayOf, MONTHS_SHORT, WEEKDAY_LONG, weekday, weekKey } from '../lib/date'
 import { checkedSet, firstWeek, trackWeekNumber, weekSummary } from '../lib/track'
 import { type DragItem, type DragState, type DropTarget, useDrag } from '../lib/useDrag'
 
@@ -30,7 +30,10 @@ function AddField({ value, onChange, onAdd, placeholder, label }: { value: strin
 /** A thin gold line where a dragged item would land. */
 const Slot = ({ on, sm }: { on: boolean; sm?: boolean }) => <div className={`drop-slot${sm ? ' sm' : ''}${on ? ' on' : ''}`} aria-hidden="true" />
 
-/** Leo's week: the tracker grid he ticks day by day, its top priority, and the week's goals as cards to drag, nest and tick. */
+/**
+ * Leo's week: Monday to Sunday along the top, the chosen day's list below to tick, drag and edit,
+ * then the week's goals as cards to drag, nest and tick.
+ */
 export function Week() {
   const data = useData()
   const today = logicalToday()
@@ -40,7 +43,6 @@ export function Week() {
   const key = asked && /^\d{4}-W\d{2}$/.test(asked) && asked <= thisWeek ? asked : thisWeek
   const [draft, setDraft] = useState('')
   const [open, setOpen] = useState<string | null>(null)
-  const [editing, setEditing] = useState(false)
   const [asking, setAsking] = useState<{ id: string; targetId: string; index?: number } | null>(null)
   const monday = mondayOf(key)
   const first = firstWeek(data.trackItems, today)
@@ -55,7 +57,11 @@ export function Week() {
   const daysLeft = 6 - diffDays(today, monday)
   const allDone = goals.length > 0 && hit === goals.length
   const sum = weekSummary(data.trackItems, checkedSet(Object.values(data.trackChecks)), key, today)
+  const pickedDay = params.get('d')
+  const day = pickedDay && sum.days.some((d) => d.date === pickedDay) ? pickedDay : current ? today : addDays(monday, 6)
+  const dayScore = sum.days.find((d) => d.date === day)!
   const go = (k: string) => setParams(k === thisWeek ? {} : { w: k }, { replace: true })
+  const pick = (d: string) => setParams({ ...(current ? {} : { w: key }), ...(d === today ? {} : { d }) }, { replace: true })
 
   const { drag, bind } = useDrag((item: DragItem, t: DropTarget) => {
     if (item.kind === 'goal') {
@@ -99,16 +105,20 @@ export function Week() {
 
       {top && <PriorityBanner goal={top} onOpen={() => showGoal(top.id)} />}
 
-      <div className="pad" style={{ paddingTop: top ? 14 : 22 }}>
-        <div className="card" style={{ padding: '12px 12px 10px 14px' }}>
-          <TrackGrid week={key} today={today} editing={editing} />
+      <div className="pad" style={{ paddingTop: top ? 14 : 20 }}>
+        <DayStrip days={sum.days} today={today} selected={day} onPick={pick} />
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 18 }}>
+          <h2 className="display" style={{ flex: 1, fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', margin: 0 }}>
+            {day === today ? 'Today' : WEEKDAY_LONG[weekday(day)]}
+          </h2>
+          <div style={{ fontSize: 13, fontWeight: 800, color: !dayScore.future && dayScore.total > 0 && dayScore.done === dayScore.total ? 'var(--gold-text)' : 'var(--muted-2)' }}>
+            {dayScore.future ? 'Coming up' : dayScore.total === 0 ? '' : dayScore.done === dayScore.total ? 'All done' : `${dayScore.done} of ${dayScore.total} done`}
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-          <button type="button" onClick={() => setEditing(!editing)} style={{ fontSize: 13, fontWeight: 800, color: editing ? 'var(--gold-text)' : 'var(--muted-2)', padding: '6px 2px' }}>
-            {editing ? 'Done' : 'Edit list'}
-          </button>
-        </div>
-        {editing && <TrackAdd week={key} />}
+        {!dayScore.future && dayScore.total > 0 && (
+          <div className="day-progress" aria-hidden="true"><span style={{ width: `${(dayScore.done / dayScore.total) * 100}%` }} /></div>
+        )}
+        <WeekDay week={key} date={day} today={today} />
       </div>
 
       <div className="pad" style={{ paddingTop: 28 }}>
@@ -124,7 +134,7 @@ export function Week() {
           <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 8, lineHeight: 1.5 }}>Pick a few things that would make this week a good one.</div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 12 }}>
+        <div data-drag-scope="goals" style={{ display: 'flex', flexDirection: 'column', marginTop: 12 }}>
           {goals.map((g, i) => (
             <div key={g.id}>
               <Slot on={drag?.target?.kind === 'goal-at' && drag.target.index === i} />

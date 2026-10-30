@@ -31,6 +31,8 @@ export interface TrackItem {
   startWeek: string
   /** Last ISO week it appears in; open-ended when absent. Removing an item sets this, so past weeks keep it. */
   endWeek?: string
+  /** Set on a sub to-do: the item it sits under. Its slot and weeks follow that item. */
+  parentId?: string
   createdAt: string
   updatedAt: string
 }

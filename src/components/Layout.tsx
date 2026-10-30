@@ -15,7 +15,7 @@ const HIDE_BAR = ['/', '/ori', '/ori/chat', '/notes/:id', '/tasks/new', '/tasks/
 const DARK = ['/ori']
 
 const TAB_FOR: [string, Tab][] = [
-  ['/today', 'today'], ['/week', 'week'], ['/streak', 'week'], ['/journal', 'journal'], ['/notes', 'today'],
+  ['/today', 'today'], ['/week', 'week'], ['/streak', 'streaks'], ['/journal', 'journal'], ['/notes/:id', 'journal'],
   ['/profile', 'you'], ['/notifications', 'you'], ['/notifications/settings', 'you'],
   ['/calendar', 'calendar'], ['/tasks', 'upcoming'],
 ]

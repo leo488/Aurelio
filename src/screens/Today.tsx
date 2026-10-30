@@ -66,7 +66,7 @@ export function Today() {
       <div className="pad" style={{ paddingTop: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Label>Notes</Label>
-          <Link to="/notes" style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted-2)' }}>All notes ›</Link>
+          <Link to="/journal?tab=notes" style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted-2)' }}>All notes ›</Link>
         </div>
         {pinned.map((n) => (
           <Link key={n.id} to={`/notes/${n.id}`} className="card note-widget">

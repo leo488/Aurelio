@@ -7,7 +7,7 @@ import {
   stepsOn, type Completions,
 } from '../lib/streak'
 import { goalService, journalService, noteService, notificationService, profileService, routineService, settingsService, sharedService, taskService, trackService } from '../services'
-import { checkId, STARTER } from '../lib/track'
+import { checkId, STARTER, weekList } from '../lib/track'
 import { mondayOf as mondayFor, weekKey } from '../lib/date'
 import { defaultSettings } from './seed'
 import type { Activity, AppNotification, DailyStatus, Routine, RoutineCompletion, RoutineStep, Settings, Task, User, WeeklyGoal, TrackItem, TrackCheck, TrackSlot, Note, JournalEntry } from './types'
@@ -56,8 +56,11 @@ export interface DataState {
 interface Actions {
   load: (me: User) => Promise<void>
 
-  addTrackItem: (title: string, slot: TrackSlot, week: string, onlyThisWeek?: boolean) => void
+  /** With `parentId`, a sub to-do under that item. */
+  addTrackItem: (title: string, slot: TrackSlot, week: string, onlyThisWeek?: boolean, parentId?: string) => void
   renameTrackItem: (id: string, title: string) => void
+  /** Drag and drop: to `index` among the items of `slot`, or among the sub to-dos of `parentId`. */
+  moveTrackItem: (id: string, to: { slot: TrackSlot; parentId?: string; index: number }, week: string) => void
   /** Off the list from `week` on; earlier weeks keep it. */
   removeTrackItem: (id: string, week: string) => void
   toggleCheck: (itemId: string, date: string) => void
@@ -262,11 +265,16 @@ export const useData = create<DataState & Actions>()((set, get) => {
 
     // ─── Leo's weekly tracker, notes and journal ───────────────────────────
 
-    addTrackItem: (title, slot, week, onlyThisWeek) => {
+    addTrackItem: (title, slot, week, onlyThisWeek, parentId) => {
       if (!title.trim()) return
       const t = nowIso()
-      const position = Math.max(0, ...get().trackItems.filter((i) => i.slot === slot).map((i) => i.position + 1))
-      const item: TrackItem = { id: uid(), userId: me().id, title: title.trim(), slot, position, startWeek: week, endWeek: onlyThisWeek ? week : undefined, createdAt: t, updatedAt: t }
+      const parent = parentId ? get().trackItems.find((i) => i.id === parentId) : undefined
+      const at = parent?.slot ?? slot
+      const position = Math.max(0, ...get().trackItems.filter((i) => i.slot === at && i.parentId === parent?.id).map((i) => i.position + 1))
+      const item: TrackItem = {
+        id: uid(), userId: me().id, title: title.trim(), slot: at, position, startWeek: week,
+        endWeek: onlyThisWeek ? week : parent?.endWeek, parentId: parent?.id, createdAt: t, updatedAt: t,
+      }
       set((s) => ({ trackItems: [...s.trackItems, item] }))
       save(trackService.saveItem(item))
     },
@@ -277,35 +285,79 @@ export const useData = create<DataState & Actions>()((set, get) => {
       set((s) => ({ trackItems: s.trackItems.map((x) => (x.id === id ? next : x)) }))
       save(trackService.saveItem(next))
     },
+    moveTrackItem: (id, to, week) => {
+      const items = get().trackItems
+      const item = items.find((x) => x.id === id)
+      if (!item || to.parentId === id) return
+      const { top, subs } = weekList(items, week)
+      const parentId = to.parentId && top.some((i) => i.id === to.parentId) ? to.parentId : undefined
+      const slot = parentId ? items.find((i) => i.id === parentId)!.slot : to.slot
+      const siblings = (parentId ? subs.get(parentId) ?? [] : top.filter((i) => i.slot === slot)).filter((i) => i.id !== id)
+      siblings.splice(Math.max(0, Math.min(to.index, siblings.length)), 0, item)
+      const t = nowIso()
+      const changed = new Map<string, TrackItem>()
+      siblings.forEach((x, position) => {
+        const next = x.id === id ? { ...x, slot, parentId, position } : { ...x, position }
+        if (next.position !== x.position || next.slot !== x.slot || next.parentId !== x.parentId) changed.set(x.id, { ...next, updatedAt: t })
+      })
+      // One level deep: an item dropped under another brings its own sub to-dos along; they follow its slot.
+      const own = subs.get(id) ?? []
+      own.forEach((x, i) => {
+        if (parentId) changed.set(x.id, { ...x, slot, parentId, position: siblings.length + i, updatedAt: t })
+        else if (x.slot !== slot) changed.set(x.id, { ...x, slot, updatedAt: t })
+      })
+      if (!changed.size) return
+      set((s) => ({ trackItems: s.trackItems.map((x) => changed.get(x.id) ?? x) }))
+      changed.forEach((x) => save(trackService.saveItem(x)))
+    },
     removeTrackItem: (id, week) => {
       const i = get().trackItems.find((x) => x.id === id)
       if (!i) return
+      const ids = [id, ...get().trackItems.filter((x) => x.parentId === id).map((x) => x.id)]
       // Added this week: delete it and its ticks. Older: end it the week before, so past weeks keep it.
       if (i.startWeek >= week) {
-        const gone = Object.values(get().trackChecks).filter((c) => c.itemId === id).map((c) => c.id)
-        set((s) => ({ trackItems: s.trackItems.filter((x) => x.id !== id), trackChecks: Object.fromEntries(Object.entries(s.trackChecks).filter(([k]) => !gone.includes(k))) }))
+        const gone = Object.values(get().trackChecks).filter((c) => ids.includes(c.itemId)).map((c) => c.id)
+        set((s) => ({ trackItems: s.trackItems.filter((x) => !ids.includes(x.id)), trackChecks: Object.fromEntries(Object.entries(s.trackChecks).filter(([k]) => !gone.includes(k))) }))
         gone.forEach((c) => save(trackService.deleteCheck(c)))
+        // Sub to-dos first, so the item's delete never waits on them.
+        ids.slice(1).forEach((x) => save(trackService.deleteItem(x)))
         save(trackService.deleteItem(id))
         return
       }
-      const next = { ...i, endWeek: weekKey(addDays(mondayFor(week), -7)), updatedAt: nowIso() }
-      set((s) => ({ trackItems: s.trackItems.map((x) => (x.id === id ? next : x)) }))
-      save(trackService.saveItem(next))
+      const endWeek = weekKey(addDays(mondayFor(week), -7))
+      const t = nowIso()
+      const ended = get().trackItems.filter((x) => ids.includes(x.id) && !(x.endWeek && x.endWeek < endWeek)).map((x) => ({ ...x, endWeek: x.startWeek > endWeek ? x.startWeek : endWeek, updatedAt: t }))
+      // A sub to-do added this week has no past to keep.
+      const fresh = ended.filter((x) => x.id !== id && x.startWeek >= week)
+      const kept = ended.filter((x) => !fresh.includes(x))
+      set((s) => ({ trackItems: s.trackItems.filter((x) => !fresh.some((f) => f.id === x.id)).map((x) => kept.find((k) => k.id === x.id) ?? x) }))
+      fresh.forEach((x) => save(trackService.deleteItem(x.id)))
+      kept.forEach((x) => save(trackService.saveItem(x)))
     },
     toggleCheck: (itemId, date) => {
-      const id = checkId(itemId, date)
       haptic()
-      if (get().trackChecks[id]) {
-        set((s) => {
-          const { [id]: _gone, ...rest } = s.trackChecks
-          return { trackChecks: rest }
-        })
-        save(trackService.deleteCheck(id))
-        return
-      }
-      const c: TrackCheck = { id, userId: me().id, itemId, date, createdAt: nowIso() }
-      set((s) => ({ trackChecks: { ...s.trackChecks, [id]: c } }))
-      save(trackService.saveCheck(c))
+      const { top, subs } = weekList(get().trackItems, weekKey(date))
+      const has = (i: string) => !!get().trackChecks[checkId(i, date)]
+      const want = new Map<string, boolean>([[itemId, !has(itemId)]])
+      const parent = top.find((i) => subs.get(i.id)?.some((x) => x.id === itemId))
+      // Ticking an item ticks its sub to-dos; ticking the last sub to-do ticks the item.
+      subs.get(itemId)?.forEach((x) => want.set(x.id, want.get(itemId)!))
+      if (parent) want.set(parent.id, subs.get(parent.id)!.every((x) => (x.id === itemId ? want.get(itemId) : has(x.id))))
+      const add: TrackCheck[] = []
+      const drop: string[] = []
+      want.forEach((on, i) => {
+        if (on === has(i)) return
+        if (on) add.push({ id: checkId(i, date), userId: me().id, itemId: i, date, createdAt: nowIso() })
+        else drop.push(checkId(i, date))
+      })
+      set((s) => {
+        const next = { ...s.trackChecks }
+        drop.forEach((k) => delete next[k])
+        add.forEach((c) => (next[c.id] = c))
+        return { trackChecks: next }
+      })
+      drop.forEach((k) => save(trackService.deleteCheck(k)))
+      add.forEach((c) => save(trackService.saveCheck(c)))
     },
     saveNote: (note) => {
       const next = { ...note, updatedAt: nowIso() }

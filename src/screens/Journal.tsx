@@ -1,24 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Label, ScreenHeader } from '../components/ui'
+import { NotesList } from './Notes'
 import { useData } from '../data/store'
 import { logicalToday, MONTHS_SHORT, WEEKDAY_LONG, weekday } from '../lib/date'
 import { anotherPrompt, promptFor } from '../lib/journalPrompts'
 
 const longDate = (d: string) => `${WEEKDAY_LONG[weekday(d)]} ${Number(d.slice(8))} ${MONTHS_SHORT[Number(d.slice(5, 7)) - 1]}`
 
-/** A question a day and room to answer it. Saves as Leo types; past days are below to read back. */
+/**
+ * What Ori opens for Leo: his journal and his notes, side by side.
+ * The journal is a question a day and room to answer it, saved as he types, with past days below.
+ */
 export function Journal() {
   const data = useData()
   const [params, setParams] = useSearchParams()
   const today = logicalToday()
+  const notes = params.get('tab') === 'notes'
   const asked = params.get('d')
   const date = asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) && asked <= today ? asked : today
   const past = data.journal.filter((e) => e.date !== date && e.body.trim())
+  const tab = (key: 'journal' | 'notes', label: string) => {
+    const on = notes === (key === 'notes')
+    return (
+      <button type="button" role="tab" aria-selected={on} className={on ? 'seg-tab on' : 'seg-tab'}
+        onClick={() => setParams(key === 'notes' ? { tab: 'notes' } : {}, { replace: true })}>{label}</button>
+    )
+  }
 
   return (
     <main className="screen" style={{ background: 'var(--wash-default)' }}>
-      <ScreenHeader title="Journal" sub={date === today ? longDate(date) : <>{longDate(date)} · <button type="button" className="link-gold" onClick={() => setParams({}, { replace: true })}>Today</button></>} />
+      <ScreenHeader title={notes ? 'Notes' : 'Journal'} sub={notes ? `${data.notes.length} ${data.notes.length === 1 ? 'note' : 'notes'}` : date === today ? longDate(date) : <>{longDate(date)} · <button type="button" className="link-gold" onClick={() => setParams({}, { replace: true })}>Today</button></>} />
+      <div className="pad" style={{ paddingTop: 14 }}>
+        <div className="seg" role="tablist">{tab('journal', 'Journal')}{tab('notes', data.notes.length ? `Notes · ${data.notes.length}` : 'Notes')}</div>
+      </div>
+      {notes ? <NotesList /> : <>
       <Entry key={date} date={date} today={today} />
       {past.length > 0 && (
         <div className="pad" style={{ paddingTop: 18 }}>
@@ -32,6 +48,7 @@ export function Journal() {
           ))}
         </div>
       )}
+      </>}
     </main>
   )
 }

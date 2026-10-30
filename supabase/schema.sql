@@ -163,6 +163,8 @@ create table if not exists public.track_checks (
   date       date not null,
   created_at timestamptz not null default now()
 );
+-- Sub to-dos sit under another item on the list.
+alter table public.track_items add column if not exists parent_id text references public.track_items on delete cascade;
 -- Notes, often read from a photo of a notepad. `image` is a small JPEG data URL.
 create table if not exists public.notes (
   id         text primary key,

@@ -30,12 +30,23 @@ export function itemsForWeek(items: TrackItem[], key: string): TrackItem[] {
     .sort((a, b) => slot(a.slot) - slot(b.slot) || a.position - b.position || a.createdAt.localeCompare(b.createdAt))
 }
 
+/** A week's list as Leo sees it: the items, and each item's sub to-dos in order. */
+export function weekList(items: TrackItem[], key: string) {
+  const all = itemsForWeek(items, key)
+  const top = all.filter((i) => !i.parentId)
+  const ids = new Set(top.map((i) => i.id))
+  const subs = new Map<string, TrackItem[]>()
+  for (const i of all) if (i.parentId && ids.has(i.parentId)) subs.set(i.parentId, [...(subs.get(i.parentId) ?? []), i])
+  return { top, subs }
+}
+
 export type Checked = Set<string>
 export const checkedSet = (checks: TrackCheck[]): Checked => new Set(checks.map((c) => c.id))
 
 /** How much of a day's list was ticked. */
 export function dayScore(items: TrackItem[], checked: Checked, date: string) {
-  const list = itemsForWeek(items, weekKey(date))
+  // Sub to-dos are steps of their item; the item counts once.
+  const list = itemsForWeek(items, weekKey(date)).filter((i) => !i.parentId)
   const done = list.filter((i) => checked.has(checkId(i.id, date))).length
   return { done, total: list.length, pct: list.length ? done / list.length : 0 }
 }

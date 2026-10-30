@@ -47,7 +47,7 @@ export function NoteEdit() {
     if (started.current || id !== 'new') return
     started.current = true
     if (picked) void read(picked)
-    else if (!params.get('blank')) navigate('/notes', { replace: true })
+    else if (!params.get('blank')) navigate('/journal?tab=notes', { replace: true })
   })
 
   if (id !== 'new' && !existing) return null
@@ -92,7 +92,7 @@ export function NoteEdit() {
           </label>
           {existing && (
             <button type="button" style={{ fontSize: 14, fontWeight: 800, color: 'var(--clay)', marginLeft: 'auto' }}
-              onClick={() => { if (window.confirm('Delete this note?')) { data.deleteNote(note.id); navigate('/notes', { replace: true }) } }}>Delete</button>
+              onClick={() => { if (window.confirm('Delete this note?')) { data.deleteNote(note.id); navigate('/journal?tab=notes', { replace: true }) } }}>Delete</button>
           )}
         </div>
       </div>
