@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Label, ScreenHeader } from '../components/ui'
 import { NotesList } from './Notes'
+import { JournalCard } from '../components/notes'
 import { useData } from '../data/store'
 import { logicalToday, MONTHS_SHORT, WEEKDAY_LONG, weekday } from '../lib/date'
 import { anotherPrompt, promptFor } from '../lib/journalPrompts'
@@ -39,13 +40,9 @@ export function Journal() {
       {past.length > 0 && (
         <div className="pad" style={{ paddingTop: 18 }}>
           <Label>Earlier</Label>
-          {past.map((e) => (
-            <button key={e.id} type="button" onClick={() => { setParams({ d: e.date }); window.scrollTo(0, 0) }} className="list-row" style={{ display: 'block' }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted-3)' }}>{longDate(e.date)}</div>
-              <div style={{ fontSize: 14.5, fontWeight: 700, marginTop: 3 }}>{e.prompt}</div>
-              <div style={{ fontSize: 13.5, color: 'var(--muted-1)', marginTop: 3, lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.body}</div>
-            </button>
-          ))}
+          <div className="keep-grid">
+            {past.map((e) => <JournalCard key={e.id} entry={e} date={longDate(e.date)} onOpen={() => { setParams({ d: e.date }); window.scrollTo(0, 0) }} />)}
+          </div>
         </div>
       )}
       </>}

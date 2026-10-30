@@ -176,6 +176,11 @@ create table if not exists public.notes (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- Several photos to a note, and where it was made.
+alter table public.notes add column if not exists images jsonb not null default '[]';
+alter table public.notes add column if not exists place text;
+alter table public.notes add column if not exists lat double precision;
+alter table public.notes add column if not exists lng double precision;
 -- One journal entry a day, with the question it answered.
 create table if not exists public.journal_entries (
   id         text primary key,

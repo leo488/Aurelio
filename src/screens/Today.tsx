@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
 import { InstallHint, PushHint } from '../components/InstallHint'
-import { NoteText } from '../components/notes'
+import { checklist, NoteText, photosOf } from '../components/notes'
 import { StatCards } from '../components/StatCards'
 import { TodayList } from '../components/track'
 import { headerDate, Label, PartnerStrip, RemindSheet } from '../components/ui'
@@ -68,15 +68,24 @@ export function Today() {
           <Label>Notes</Label>
           <Link to="/journal?tab=notes" style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--muted-2)' }}>All notes ›</Link>
         </div>
-        {pinned.map((n) => (
-          <Link key={n.id} to={`/notes/${n.id}`} className="card note-widget">
-            {n.title && <div style={{ fontSize: 15.5, fontWeight: 800 }}>{n.title}</div>}
-            <NoteText body={n.body} lines={8} />
-          </Link>
-        ))}
+        {pinned.length > 0 && (
+          <div className="note-tiles">
+            {pinned.map((n) => {
+              const photo = photosOf(n)[0]
+              const list = checklist(n.body)
+              return (
+                <Link key={n.id} to={`/notes/${n.id}`} className="card note-tile">
+                  {photo ? <img src={photo} alt="" loading="lazy" /> : <div className="note-tile-text"><NoteText body={n.body} lines={4} /></div>}
+                  <div className="note-tile-title">{n.title || 'Untitled'}</div>
+                  {list && <div className="note-tile-sub">{list.done}/{list.total} done</div>}
+                </Link>
+              )
+            })}
+          </div>
+        )}
         {pinned.length === 0 && (
           <div style={{ fontSize: 13.5, color: 'var(--muted-2)', padding: '10px 0', lineHeight: 1.5 }}>
-            Pin a note to keep it here. Tap Ori below to snap a page of your notepad.
+            Pin a note to keep it here. Tap Ori below, then Notes, to snap a page of your notepad.
           </div>
         )}
       </div>

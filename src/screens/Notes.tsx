@@ -1,55 +1,59 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { NoteText } from '../components/notes'
+import { useNavigate } from 'react-router-dom'
+import { NoteCard } from '../components/notes'
 import { Ori } from '../components/Ori'
 import { PlusButton } from '../components/ui'
 import { useData } from '../data/store'
-import { MONTHS_SHORT } from '../lib/date'
-import { setPendingPhoto } from '../lib/scan'
+import { MAX_PHOTOS, setPendingPhotos } from '../lib/scan'
 
-const when = (iso: string) => {
-  const d = new Date(iso)
-  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
-}
-
-/** The button that opens the camera (or photos) and goes on to read the page. */
-export function SnapButton({ label = 'Snap a page of your notepad' }: { label?: string }) {
+/** Take a photo with the camera, or pick several pages from the gallery; either goes on to read them. */
+export function PhotoButtons() {
   const navigate = useNavigate()
+  const go = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!files.length) return
+    setPendingPhotos(files)
+    navigate('/notes/new')
+  }
   return (
-    <label className="snap-btn">
-      <Ori size={30} />
-      <span style={{ flex: 1 }}>{label}</span>
-      <span aria-hidden="true" style={{ fontSize: 18 }}>›</span>
-      <input type="file" accept="image/*" hidden onChange={(e) => {
-        const f = e.target.files?.[0]
-        if (!f) return
-        setPendingPhoto(f)
-        navigate('/notes/new')
-      }} />
-    </label>
+    <div style={{ display: 'flex', gap: 8 }}>
+      <label className="snap-btn" style={{ flex: 1, minWidth: 0 }}>
+        <Ori size={24} />
+        <span style={{ flex: 1, whiteSpace: 'nowrap' }}>Take a photo</span>
+        <input type="file" accept="image/*" capture="environment" hidden onChange={go} />
+      </label>
+      <label className="snap-btn soft" aria-label={`Choose up to ${MAX_PHOTOS} photos`}>
+        <PhotosIcon />
+        <span>Photos</span>
+        <input type="file" accept="image/*" multiple hidden onChange={go} />
+      </label>
+    </div>
   )
 }
 
-/** Leo's notes: snapped from his notepad or typed. Pinned ones show on Today. */
+const PhotosIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="5" width="15" height="14" rx="2.5" />
+    <path d="M3 15l4-4 4 4 3-3 4 4" />
+    <path d="M7 3h12a2 2 0 0 1 2 2v11" />
+  </svg>
+)
+
+/** Leo's notes as a grid of cards, like Keep: snapped from his notepad or typed. Pinned ones show on Today. */
 export function NotesList() {
   const notes = useData((s) => s.notes)
   const navigate = useNavigate()
   return (
     <div className="pad" style={{ paddingTop: 16 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}><SnapButton /></div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ flex: 1, minWidth: 0 }}><PhotoButtons /></div>
         <PlusButton label="New note" onClick={() => navigate('/notes/new?blank=1')} />
       </div>
-      {notes.map((n) => (
-        <Link key={n.id} to={`/notes/${n.id}`} className="card note-row">
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <div style={{ flex: 1, fontSize: 15.5, fontWeight: 800 }}>{n.title || 'Untitled'}</div>
-            {n.pinned && <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--gold-text)' }}>ON TODAY</span>}
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-3)' }}>{when(n.updatedAt)}</span>
-          </div>
-          <NoteText body={n.body} lines={3} />
-        </Link>
-      ))}
-      {notes.length === 0 && <div style={{ fontSize: 13.5, color: 'var(--muted-2)', padding: '16px 0', lineHeight: 1.5 }}>Your notes will be here. Snap your goals page and it turns into a note you can pin to Today.</div>}
+      {notes.length > 0 ? (
+        <div className="keep-grid">{notes.map((n) => <NoteCard key={n.id} note={n} />)}</div>
+      ) : (
+        <div style={{ fontSize: 13.5, color: 'var(--muted-2)', padding: '16px 0', lineHeight: 1.5 }}>Your notes will be here. Snap your goals page and it turns into a checklist you can pin to Today.</div>
+      )}
     </div>
   )
 }

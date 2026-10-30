@@ -52,8 +52,14 @@ export interface Note {
   userId: string
   title: string
   body: string
-  /** A small JPEG data URL of the photo it came from. */
+  /** A small JPEG data URL of the photo it came from (the first, when there are several). */
   image?: string
+  /** Small JPEG data URLs of every photo, in order. Older notes only have `image`. */
+  images?: string[]
+  /** Where Leo was when he made it, as a short place name, and the spot itself. */
+  place?: string
+  lat?: number
+  lng?: number
   pinned: boolean
   createdAt: string
   updatedAt: string
