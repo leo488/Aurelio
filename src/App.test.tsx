@@ -9,14 +9,14 @@ import { getAuth } from './services'
 
 const pressPin = (pin: string) => pin.split('').forEach((d) => fireEvent.click(screen.getByRole('button', { name: d })))
 
-async function firstLogin(name: 'Leo' | 'Sonia', pin: string) {
+async function firstLogin(name: 'Leo' | 'Soniya', pin: string) {
   fireEvent.click(await screen.findByText(name))
   fireEvent.click(await screen.findByRole('button', { name: 'Email me a code' }))
   fireEvent.change(await screen.findByLabelText('Code from the email'), { target: { value: '123456' } })
   fireEvent.click(screen.getByRole('button', { name: 'Verify' }))
-  await screen.findByText('Choose a PIN')
+  await screen.findByText('Create a 4-digit PIN')
   pressPin(pin)
-  await screen.findByText('Once more')
+  await screen.findByText('Confirm your PIN')
   pressPin(pin)
 }
 
@@ -45,25 +45,30 @@ describe('two people, two experiences', () => {
     unmount()
   })
 
-  test('Leo: first login with email code and a new PIN lands on routines', async () => {
+  test('Leo: first login with email code and a new PIN lands on his week’s list', async () => {
     const { unmount } = renderApp()
     await firstLogin('Leo', '2468')
-    await screen.findByText(/routines completed/)
-    expect(screen.getByText('Morning Routine')).toBeTruthy()
+    await screen.findByText('Tasks done')
+    expect(screen.getByText('Study the Word')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Morning prayer' }))
+    expect(screen.getByText('1 of 10')).toBeTruthy()
     expect(screen.queryByText('Team meeting')).toBeNull()
-    expect(screen.getByRole('link', { name: 'Routines' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Week' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Streak' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Journal and notes' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Calendar' })).toBeNull()
     unmount()
     await lock()
   })
 
-  test('Sonia: first login lands on her planner, never Leo’s routines', async () => {
+  test('Soniya: first login lands on her planner, never Leo’s routines', async () => {
     const { unmount } = renderApp()
     fireEvent.click(await screen.findByRole('button', { name: 'Back' }))
-    await firstLogin('Sonia', '1357')
+    await firstLogin('Soniya', '1357')
     await screen.findByText(/tasks today/)
     expect(screen.getByText('Send proposal')).toBeTruthy()
-    expect(screen.queryByText('Morning Routine')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Upcoming' })).toBeTruthy()
+    expect(screen.queryByText('Study the Word')).toBeNull()
     expect(screen.getByRole('link', { name: 'Calendar' })).toBeTruthy()
     unmount()
     await lock()
@@ -71,36 +76,35 @@ describe('two people, two experiences', () => {
 
   test('returning: straight to the PIN for the last profile; a wrong PIN is refused', async () => {
     const { unmount } = renderApp()
-    await screen.findByText('Hi Sonia')
+    await screen.findByText('Hi Soniya.')
     pressPin('0000')
-    await screen.findByText('Wrong PIN.')
+    await screen.findByText('That’s not it. Try again.')
     pressPin('1357')
     await screen.findByText(/tasks today/)
     unmount()
     await lock()
   })
 
-  test('Sonia can’t open Leo’s screens by URL', async () => {
+  test('Soniya can’t open Leo’s screens by URL', async () => {
     await act(async () => {
       const s = await getAuth().signInWithPin('sonia', '1357')
       useAuth.getState().setSession(s)
       await useData.getState().load(s.user)
     })
-    const { unmount } = renderApp('/routines')
+    const { unmount } = renderApp('/week')
     await waitFor(() => expect(screen.getByText(/tasks today/)).toBeTruthy())
     unmount()
     await lock()
   })
 
-  test('quick add puts a task on Sonia’s timeline without leaving Today', async () => {
+  test('quick add puts a task on Soniya’s plan without leaving Today', async () => {
     await act(async () => {
       const s = await getAuth().signInWithPin('sonia', '1357')
       useAuth.getState().setSession(s)
       await useData.getState().load(s.user)
     })
     const { unmount } = renderApp('/today')
-    fireEvent.click(await screen.findByRole('button', { name: /Add task/ }))
-    const input = screen.getByLabelText('New task')
+    const input = await screen.findByLabelText('Add a task for today')
     fireEvent.change(input, { target: { value: 'Pick up flowers 17:15' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await screen.findByText('Pick up flowers')

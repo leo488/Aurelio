@@ -10,12 +10,28 @@ import './styles/tokens.css'
 import './index.css'
 import App from './App.tsx'
 import { boot } from './boot'
+import { ErrorBoundary } from './components/ErrorBoundary'
+
+// When a new version is deployed, its service worker takes over; reload once so the page runs the new code.
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  let reloaded = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return
+    reloaded = true
+    window.location.reload()
+  })
+}
+
+// The app's files loaded, so a later missing file may reload again.
+try { sessionStorage.removeItem('aurelio:asset-reload') } catch { /* storage blocked */ }
 
 void boot().finally(() =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <BrowserRouter>
-        <App />
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </BrowserRouter>
     </StrictMode>,
   ),

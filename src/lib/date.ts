@@ -116,3 +116,29 @@ export const relativeAgo = (at: number, now = Date.now()) => {
   const d = Math.round(h / 24)
   return `${d} day${d === 1 ? '' : 's'} ago`
 }
+
+const isoWeekOf = (d: Date) => {
+  // The Thursday of this week decides the year; count whole weeks from that year's 1 January.
+  const thursday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7) + 3)
+  const year = thursday.getFullYear()
+  return { week: 1 + Math.floor(Math.round((thursday.getTime() - new Date(year, 0, 1).getTime()) / 86400000) / 7), year }
+}
+
+/** ISO week of the year (weeks start Monday; week 1 holds the year's first Thursday) and how many weeks that year has. */
+export const isoWeek = (iso: string) => {
+  const { week, year } = isoWeekOf(fromISO(iso))
+  return { week, of: isoWeekOf(new Date(year, 11, 28)).week, year }
+}
+
+/** The ISO week as a stable key, "2026-W42", and the Monday it starts on. */
+export const weekKey = (iso: string) => {
+  const { week, year } = isoWeek(iso)
+  return `${year}-W${pad(week)}`
+}
+export const weekStart = (iso: string) => addDays(iso, -weekday(iso))
+
+/** The Monday a week key ("2026-W44") starts on. 4 January is always in week 1. */
+export const mondayOf = (key: string) => {
+  const [y, w] = key.split('-W').map(Number)
+  return addDays(weekStart(`${y}-01-04`), (w - 1) * 7)
+}

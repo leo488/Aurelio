@@ -7,12 +7,16 @@ import { useMe } from '../data/session'
 import { useData } from '../data/store'
 import { dateOf, logicalToday, relativeDay, shortDate, timeOf, WEEKDAY_SHORT, weekday } from '../lib/date'
 import { parseRequest, summarize, typeColor, typeLabel, type OriItem } from '../lib/ori'
-import { applyOriItems, firstDate, isRoutineRequest } from '../lib/oriApply'
-import { generateRoutine } from '../lib/routineDraft'
+import { applyOriItems, firstDate, isRoutineEdit, isRoutineRequest } from '../lib/oriApply'
+import { draftIcon, generateRoutine, type RoutineDraft } from '../lib/routineDraft'
+import { CATEGORY_LABEL } from '../data/select'
+import { uid } from '../data/store'
+import { daysLabel } from '../lib/date'
+import { totalMinutes } from '../lib/labels'
 import { getRecognition, type Recognition } from '../lib/speech'
 import { numberWord, numberWordLower } from '../lib/words'
 
-type Phase = 'listening' | 'typing' | 'thinking' | 'confirm' | 'nothing'
+type Phase = 'listening' | 'typing' | 'thinking' | 'confirm' | 'nothing' | 'draft'
 
 const describe = (i: OriItem) => {
   if (i.type === 'event' && i.start) return `${shortDate(dateOf(i.start)!)} · ${timeOf(i.start)} – ${timeOf(i.end)}`
@@ -28,6 +32,7 @@ const describe = (i: OriItem) => {
 /** Ori's voice overlay: listening → thinking → confirm. Falls back to typing with no dead end. */
 export function OriVoice() {
   const { me, partnerName } = useMe()
+  const data = useData()
   const navigate = useNavigate()
   const location = useLocation()
   const preset = (location.state as { text?: string } | null)?.text
@@ -37,6 +42,7 @@ export function OriVoice() {
   const [items, setItems] = useState<OriItem[]>([])
   const [editing, setEditing] = useState<number | null>(null)
   const [sorted, setSorted] = useState<{ count: number; summary: string } | null>(null)
+  const [draft, setDraft] = useState<RoutineDraft | null>(null)
   const rec = useRef<Recognition | null>(null)
   const finalText = useRef('')
   const touchY = useRef<number | null>(null)
@@ -52,11 +58,14 @@ export function OriVoice() {
     setTranscript(text)
     setPhase('thinking')
     const started = Date.now()
-    // Leo can ask for a whole routine; it opens as a draft to review, never saved straight away.
-    if (me.role === 'leo' && isRoutineRequest(text)) {
-      const draft = await generateRoutine(text)
-      await new Promise((r) => setTimeout(r, Math.max(0, 900 - (Date.now() - started))))
-      navigate('/routines/new', { replace: true, state: { draft } })
+    // Leo describes a routine in his own words and gets a draft to review, never saved straight away.
+    // Only "move my morning routine to 7" style edits go down the item path.
+    if (me.role === 'leo' && (isRoutineRequest(text) || !isRoutineEdit(text))) {
+      setSorted({ count: 0, summary: 'Building a routine' })
+      const d = await generateRoutine(text)
+      await new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - started))))
+      setDraft(d)
+      setPhase('draft')
       return
     }
     const ctx = { today, now: new Date(), routines: useData.getState().routines.map((r) => ({ id: r.id, name: r.name })), names: ROLES.map((r) => PROFILES[r].name) }
@@ -129,6 +138,18 @@ export function OriVoice() {
     flash(`${numberWord(items.length)} items added${sameDay ? ` to ${relativeDay(d, today) === 'Today' ? 'today' : relativeDay(d, today)}` : ''}`)
   }
 
+  const saveDraft = () => {
+    if (!draft) return
+    const days = draft.days ?? [0, 1, 2, 3, 4, 5, 6]
+    data.createRoutine({
+      name: draft.name, description: draft.description, icon: draftIcon(draft), timeCategory: draft.timeCategory, categoryLabel: draft.categoryLabel,
+      scheduledTime: draft.scheduledTime, repeatPattern: { type: 'weekly', days }, reminder: { enabled: !!draft.scheduledTime, minutesBefore: 15 },
+      steps: draft.steps.map((x) => ({ id: uid(), title: x.title, duration: x.duration, days, countsTowardStreak: true })),
+    })
+    navigate('/routines', { replace: true })
+    flash(`${draft.name} saved${draft.scheduledTime ? ` · starts at ${draft.scheduledTime}` : ''}`)
+  }
+
   const label = phase === 'listening' ? 'ORI IS LISTENING' : phase === 'thinking' ? 'WORKING IT OUT' : 'ORI'
   const assumption = items.find((i) => i.assumption)?.assumption
 
@@ -164,15 +185,15 @@ export function OriVoice() {
 
       {phase === 'typing' && (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, animation: 'slide-up .3s ease' }}>
-          <div style={{ padding: '30px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+          <div style={{ padding: '30px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
             <div className="display" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>Tell me what’s coming up.</div>
           </div>
-          <div style={{ padding: '22px 26px 0' }}>
+          <div style={{ padding: '22px var(--pad-x) 0' }}>
             <textarea autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} rows={4} aria-label="What should Ori add?"
               placeholder="Tomorrow I have class from nine to twelve, remind me at four to work on my assignment, and it’s due Friday"
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); think(typed) } }}
-              style={{ width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 18, padding: 16, color: 'var(--on-dark)', fontSize: 16, lineHeight: 1.5, outline: 'none', resize: 'none' }} />
+              style={{ width: '100%', background: 'transparent', border: '1px solid var(--dark-outline)', borderRadius: 12, padding: 16, color: 'var(--on-dark)', fontSize: 16, lineHeight: 1.5, outline: 'none', resize: 'none' }} />
             <div style={{ fontSize: 12.5, color: 'var(--dark-hint)', marginTop: 10, lineHeight: 1.5 }}>Voice isn’t available here, so type it instead. Nothing is saved until you say so.</div>
           </div>
           <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 24 }}>
@@ -185,19 +206,19 @@ export function OriVoice() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 40px', textAlign: 'center' }}>
           <OriThinking size={132} />
           <div className="display" style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-.02em', marginTop: 40 }}>
-            {sorted ? (sorted.count === 1 ? 'Sorting that out' : `Sorting that into ${numberWordLower(sorted.count)} things`) : 'Sorting that out'}
+            {sorted ? (sorted.count === 0 ? 'Building your routine' : sorted.count === 1 ? 'Sorting that out' : `Sorting that into ${numberWordLower(sorted.count)} things`) : 'Sorting that out'}
           </div>
-          <div style={{ fontSize: 14, color: 'var(--muted-back)', marginTop: 10, lineHeight: 1.6 }}>{sorted ? sorted.summary : `“${transcript}”`}</div>
+          <div style={{ fontSize: 14, color: 'var(--muted-back)', marginTop: 10, lineHeight: 1.6 }}>{sorted && sorted.count > 0 ? sorted.summary : `“${transcript}”`}</div>
         </div>
       )}
 
       {phase === 'nothing' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease' }}>
-          <div style={{ padding: '26px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+          <div style={{ padding: '26px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
             <div>
               <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>I couldn’t place that.</div>
-              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6, lineHeight: 1.6 }}>{me.role === 'leo' ? <>I can build a routine for you to review, or move one. Try “Create a 30-minute morning routine”.</> : <>I can add tasks, appointments, reminders and deadlines. Try “Lunch with {partnerName} Friday at one”.</>}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6, lineHeight: 1.6 }}>{me.role === 'leo' ? <>Tell me what you do and I’ll turn it into a routine for you to review. Try “Every morning I pray, drink water, work out for 20 minutes and shower”.</> : <>I can add tasks, appointments, reminders and deadlines. Try “Lunch with {partnerName} Friday at one”.</>}</div>
             </div>
           </div>
           <div className="pad dark-bottom" style={{ marginTop: 'auto', display: 'flex', gap: 10 }}>
@@ -207,16 +228,56 @@ export function OriVoice() {
         </div>
       )}
 
-      {phase === 'confirm' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease' }}>
-          <div style={{ padding: '26px 26px 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+      {phase === 'draft' && draft && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease', minHeight: 0 }}>
+          <div style={{ padding: '24px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
             <Ori size={40} />
-            <div style={{ flex: 1 }}>
-              <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>{numberWord(items.length)} things. Have a look.</div>
+            <div>
+              <div className="display" style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>Here’s a draft.</div>
               <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6 }}>Nothing is saved until you say so.</div>
             </div>
           </div>
-          <div style={{ padding: '24px 26px 0', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '22px var(--pad-x) 0' }}>
+            <div className="display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.025em' }}>{draft.name}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--glyph-close)', marginTop: 4, fontWeight: 600 }}>
+              {[draft.timeCategory === 'custom' ? draft.categoryLabel || 'Custom' : CATEGORY_LABEL[draft.timeCategory], draft.scheduledTime, daysLabel(draft.days ?? [0, 1, 2, 3, 4, 5, 6]), totalMinutes(draft.steps) ? `${totalMinutes(draft.steps)} min` : ''].filter(Boolean).join(' · ')}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: 10 }}>
+              {draft.steps.map((x, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--dark-divider)' }}>
+                  <div style={{ width: 18, fontSize: 12, fontWeight: 800, color: 'var(--dark-muted-3)' }}>{i + 1}</div>
+                  <div style={{ flex: 1, fontSize: 15.5, fontWeight: 700 }}>{x.title}</div>
+                  {!!x.duration && <div style={{ fontSize: 12.5, color: 'var(--gold)', fontWeight: 700 }}>{x.duration} min</div>}
+                </div>
+              ))}
+            </div>
+            {draft.description && (
+              <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', marginTop: 16 }}>
+                <Ori size={22} style={{ marginTop: 1 }} />
+                <div style={{ fontSize: 13, color: 'var(--muted-back)', lineHeight: 1.6 }}>{draft.description}</div>
+              </div>
+            )}
+          </div>
+          <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button type="button" className="btn-gold" style={{ padding: 18 }} onClick={saveDraft}>Save routine</button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="btn-dark-outline" onClick={() => navigate('/routines/new', { replace: true, state: { draft } })}>Edit first</button>
+              <button type="button" className="btn-dark-outline" onClick={close}>Discard</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'confirm' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', animation: 'slide-up .35s ease' }}>
+          <div style={{ padding: '26px var(--pad-x) 0', display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+            <Ori size={40} />
+            <div style={{ flex: 1 }}>
+              <div className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.028em', lineHeight: 1.2 }}>{numberWord(items.length)} {items.every((i) => i.type === 'task' || i.type === 'deadline') ? 'tasks' : 'things'}. Have a look.</div>
+              <div style={{ fontSize: 13.5, color: 'var(--muted-back)', marginTop: 6 }}>Nothing is saved until you say so.</div>
+            </div>
+          </div>
+          <div style={{ padding: '24px var(--pad-x) 0', display: 'flex', flexDirection: 'column' }}>
             {items.map((it, i) => (
               <div key={i} style={{ display: 'flex', gap: 14, padding: '16px 0', borderBottom: '1px solid var(--dark-divider)' }}>
                 <div style={{ width: 3, borderRadius: 2, background: typeColor(it) }} />
@@ -238,13 +299,13 @@ export function OriVoice() {
             ))}
           </div>
           {assumption && (
-            <div style={{ padding: '18px 26px 0', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+            <div style={{ padding: '18px var(--pad-x) 0', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
               <Ori size={22} style={{ marginTop: 1 }} />
               <div style={{ fontSize: 13, color: 'var(--muted-3)', lineHeight: 1.6 }}>{assumption}</div>
             </div>
           )}
           <div className="pad dark-bottom" style={{ marginTop: 'auto', paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button type="button" className="btn-gold" onClick={create}>Create all {numberWordLower(items.length)}</button>
+            <button type="button" className="btn-gold" style={{ padding: 18 }} onClick={create}>{me.role === 'sonia' ? 'Add' : 'Create'} all {numberWordLower(items.length)}</button>
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="button" className="btn-dark-outline" onClick={() => navigate('/ori/chat', { replace: true, state: { from: transcript, summary: summarize(items) } })}>Change something</button>
               <button type="button" className="btn-dark-outline" onClick={() => navigate(-1)}>Discard</button>

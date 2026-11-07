@@ -9,8 +9,11 @@ import { isScheduled } from '../lib/streak'
 
 const DURATIONS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 45, 60, 90]
 
-/** Edit (or add) one step: title, duration, days, counts-toward-streak, skip today, move. */
-export function StepSheet({ routine, step, onClose }: { routine: Routine; step: RoutineStep | null; onClose: () => void }) {
+/**
+ * Edit (or add) one step: title, duration, days, counts-toward-streak, skip today, move.
+ * With `onSave` it edits a draft (the routine builder) instead of the saved routine.
+ */
+export function StepSheet({ routine, step, onClose, onSave, onDelete }: { routine: Pick<Routine, 'id' | 'repeatPattern'>; step: RoutineStep | null; onClose: () => void; onSave?: (s: RoutineStep) => void; onDelete?: () => void }) {
   const data = useData()
   const isNew = !step
   const [draft, setDraft] = useState<RoutineStep>(() => step ?? { id: uid(), title: '', days: routine.repeatPattern.days, countsTowardStreak: true })
@@ -21,7 +24,8 @@ export function StepSheet({ routine, step, onClose }: { routine: Routine; step: 
 
   const save = () => {
     if (!draft.title.trim()) return onClose()
-    data.upsertStep(routine.id, { ...draft, title: draft.title.trim() })
+    if (onSave) onSave({ ...draft, title: draft.title.trim() })
+    else data.upsertStep(routine.id, { ...draft, title: draft.title.trim() })
     onClose()
   }
   const others = data.routines.filter((r) => r.id !== routine.id)
@@ -32,7 +36,7 @@ export function StepSheet({ routine, step, onClose }: { routine: Routine; step: 
         {isNew ? (
           <button type="button" onClick={onClose} style={{ fontSize: 15, fontWeight: 600, color: 'var(--muted-2)' }}>Cancel</button>
         ) : (
-          <button type="button" onClick={() => { data.deleteStep(routine.id, draft.id); flash(`Removed ${draft.title}`); onClose() }} style={{ fontSize: 15, fontWeight: 600, color: 'var(--clay)' }}>Delete</button>
+          <button type="button" onClick={() => { if (onDelete) onDelete(); else data.deleteStep(routine.id, draft.id); flash(`Removed ${draft.title}`); onClose() }} style={{ fontSize: 15, fontWeight: 600, color: 'var(--clay)' }}>Delete</button>
         )}
         <div style={{ fontSize: 14, fontWeight: 800 }}>{isNew ? 'New step' : 'Edit step'}</div>
         <button type="button" onClick={save} style={{ fontSize: 15, fontWeight: 800, color: 'var(--gold-text)' }}>Done</button>
@@ -75,9 +79,9 @@ export function StepSheet({ routine, step, onClose }: { routine: Routine; step: 
         <Row last title="Counts toward streak" sub="Turn off for steps that shouldn’t decide the day"
           right={<Toggle label="Counts toward streak" on={draft.countsTowardStreak} onChange={(v) => set({ countsTowardStreak: v })} />} />
       </div>
-      {!isNew && (
+      {!isNew && !onSave && 'name' in routine && (
         <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
-          <button type="button" className="btn btn-chip" style={{ flex: 1 }} disabled={!isScheduled(routine, today)}
+          <button type="button" className="btn btn-chip" style={{ flex: 1 }} disabled={!isScheduled(routine as Routine, today)}
             onClick={() => { data.skipStepToday(routine.id, draft.id); flash(`${draft.title} skipped today · it won’t count`); onClose() }}>
             Skip today
           </button>

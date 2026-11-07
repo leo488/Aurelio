@@ -100,7 +100,7 @@ export function seed(now = new Date(), ids: { leo: string; sonia: string } = { l
   // Today: the morning is under way.
   record(routines[0], today, ['m-water', 'm-pray', 'm-exercise'], { startedAt: at(today, '06:32') })
 
-  // Sonia's planner: past days mostly done, today laid out, a few things coming up.
+  // Soniya's planner: past days mostly done, today laid out, a few things coming up.
   const task = (t: Pick<Task, 'id' | 'title'> & Partial<Task>): Task => ({
     userId: ids.sonia, priority: 'medium', completed: false, createdAt: iso, updatedAt: iso, ...t,
   })
@@ -139,7 +139,7 @@ export function seed(now = new Date(), ids: { leo: string; sonia: string } = { l
 
   const notifications: AppNotification[] = [
     { id: 'n-1', userId: ids.leo, kind: 'routine', title: 'Morning Routine starts in 15 minutes', body: 'Drink water, pray, exercise', refType: 'routine', refId: 'leo-morning', scheduledFor: at(today, '06:15'), status: 'read', createdAt: at(today, '06:15') },
-    { id: 'n-2', userId: ids.leo, kind: 'partner', title: 'Sonia sent you some encouragement', scheduledFor: at(addDays(today, -1), '20:14'), status: 'read', fromUserId: ids.sonia, createdAt: at(addDays(today, -1), '20:14') },
+    { id: 'n-2', userId: ids.leo, kind: 'partner', title: 'Soniya sent you some encouragement', scheduledFor: at(addDays(today, -1), '20:14'), status: 'read', fromUserId: ids.sonia, createdAt: at(addDays(today, -1), '20:14') },
     { id: 'n-3', userId: ids.sonia, kind: 'task', title: 'Team meeting in 15 minutes', refType: 'task', refId: 's-meeting', scheduledFor: at(today, '08:45'), status: 'read', createdAt: at(today, '08:45') },
   ]
 

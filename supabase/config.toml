@@ -1,0 +1,8 @@
+# Used by `supabase functions deploy` in .github/workflows/pages.yml.
+project_id = "aurelio"
+
+[functions.auth]
+verify_jwt = false
+
+[functions.push-dispatch]
+verify_jwt = false

@@ -72,14 +72,6 @@ export async function checkPin(role: Role, pin: string): Promise<boolean> {
   return ok
 }
 
-/**
- * The secret the database's auth provider sees in place of the PIN: PBKDF2 of the PIN salted
- * with the account email, so the provider never receives the PIN and the value meets its
- * minimum password length. Wrong-PIN guessing is limited by the provider's rate limits.
- */
-export const pinSecret = async (email: string, pin: string) =>
-  derive(pin, new TextEncoder().encode(`aurelio:${email.toLowerCase()}`), 100_000)
-
 /** The last profile used on this device, so the PIN screen can open straight away. */
 export const lastProfile = {
   get: () => store.get<Role>('aurelio:last-profile'),

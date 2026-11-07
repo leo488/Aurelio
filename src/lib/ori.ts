@@ -1,4 +1,5 @@
 import { addDays, diffDays, dt, hhmm, minutesOf, nowMinutes, weekday, WEEKDAY_LONG } from './date'
+import { askOri } from './oriRemote'
 import { capitalize, joinAnd } from './words'
 
 export type OriItemType = 'event' | 'task' | 'deadline' | 'routineEdit'
@@ -29,27 +30,15 @@ const DAY_NAMES = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'satu
 const T = String.raw`(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?`
 
 /**
- * Turn a request into structured items. With VITE_ORI_ENDPOINT set, the transcript goes to that
- * server-side LLM endpoint (never ship API keys in the PWA); otherwise, or if it fails, a local
+ * Turn a request into structured items. With the database (or VITE_ORI_ENDPOINT) the transcript goes
+ * to the server-side AI (never ship API keys in the PWA); otherwise, or if it fails, a local
  * rule-based parser handles the common shapes so Ori works offline.
  */
 export async function parseRequest(transcript: string, ctx: OriContext): Promise<OriItem[]> {
-  const endpoint = import.meta.env.VITE_ORI_ENDPOINT as string | undefined
-  if (endpoint && navigator.onLine) {
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, now: ctx.now.toISOString(), today: ctx.today, routines: ctx.routines }),
-      })
-      if (res.ok) {
-        const json = (await res.json()) as { items?: OriItem[] }
-        if (Array.isArray(json.items)) return json.items
-      }
-    } catch {
-      /* fall back to the local parser */
-    }
-  }
+  // The AI gets the local date and clock, not UTC, so "tomorrow at 9" means what the person meant.
+  const local = `${ctx.today} ${WEEKDAY_LONG[weekday(ctx.today)]} ${hhmm(nowMinutes(ctx.now))}`
+  const json = await askOri<{ items?: OriItem[] }>({ transcript, now: local, today: ctx.today, routines: ctx.routines })
+  if (json && Array.isArray(json.items) && json.items.length) return json.items
   return parseLocal(transcript, ctx)
 }
 

@@ -15,6 +15,16 @@
     <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
     <link rel="apple-touch-startup-image" href="/splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
     <style>html, body { background: #0E1013; }</style>
+    <script>
+      // A copy of the app opened just as an update lands can ask for files that are gone. Reload once
+      // and the new version's files load instead of leaving a blank screen.
+      addEventListener('error', function (e) {
+        var t = e.target, u = t && (t.src || t.href)
+        if (!u || u.indexOf('/assets/') < 0) return
+        try { if (sessionStorage.getItem('aurelio:asset-reload')) return; sessionStorage.setItem('aurelio:asset-reload', '1') } catch (_) { return }
+        location.reload()
+      }, true)
+    </script>
   </head>
   <body>
     <div id="root"></div>

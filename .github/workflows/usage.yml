@@ -1,0 +1,22 @@
+# Reports how much of the free database space is used and what takes it up. Read-only.
+# Run it from the Actions tab, or it runs when this file changes.
+name: Database usage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/design-v2-llqmbc]
+    paths: [.github/workflows/usage.yml, scripts/supabase-usage.mjs]
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/supabase-usage.mjs
+        env:
+          SUPABASE_PROJECT_REF: ztfeeixhwszajlgfvfli
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

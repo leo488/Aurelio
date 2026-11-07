@@ -14,6 +14,68 @@ export interface User {
   role: Role
 }
 
+// ─── Leo: the weekly tracker, notes and journal ───────────────────────────────
+
+/** When in the day a tracked item belongs. */
+export type TrackSlot = 'morning' | 'day' | 'evening'
+
+/** One line of Leo's weekly list. The same list repeats every day of a week; ticks are per day. */
+export interface TrackItem {
+  id: string
+  userId: string
+  title: string
+  slot: TrackSlot
+  /** Order within its slot, smallest first. */
+  position: number
+  /** ISO week ("2026-W44") it first appears in. */
+  startWeek: string
+  /** Last ISO week it appears in; open-ended when absent. Removing an item sets this, so past weeks keep it. */
+  endWeek?: string
+  /** Set on a sub to-do: the item it sits under. Its slot and weeks follow that item. */
+  parentId?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** One tick: the item was done on that day. `${itemId}|${date}` */
+export interface TrackCheck {
+  id: string
+  userId: string
+  itemId: string
+  date: string
+  createdAt: string
+}
+
+/** A note, often read from a photo of a notepad. Pinned notes show on Today. */
+export interface Note {
+  id: string
+  userId: string
+  title: string
+  body: string
+  /** A small JPEG data URL of the photo it came from (the first, when there are several). */
+  image?: string
+  /** Small JPEG data URLs of every photo, in order. Older notes only have `image`. */
+  images?: string[]
+  /** Where Leo was when he made it, as a short place name, and the spot itself. */
+  place?: string
+  lat?: number
+  lng?: number
+  pinned: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** One journal entry a day, and the question it answered. `${userId}|${date}` */
+export interface JournalEntry {
+  id: string
+  userId: string
+  date: string
+  prompt: string
+  body: string
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Leo: routines ────────────────────────────────────────────────────────────
 
 export type TimeCategory = 'morning' | 'afternoon' | 'evening' | 'night' | 'custom'
@@ -92,9 +154,35 @@ export interface RoutineCompletion {
   updatedAt: string
 }
 
-// ─── Sonia: tasks and calendar ───────────────────────────────────────────────
+// ─── Soniya: tasks and calendar ───────────────────────────────────────────────
 
 export type Priority = 'low' | 'medium' | 'high'
+
+export interface GoalStep {
+  id: string
+  title: string
+  done: boolean
+}
+
+/** One goal for an ISO week ("2026-W42"). Private to its owner. */
+export interface WeeklyGoal {
+  id: string
+  userId: string
+  week: string
+  title: string
+  done: boolean
+  doneAt?: string
+  /** Order in the list, smallest first. */
+  position: number
+  /** Smaller pieces of the goal; ticking them all ticks the goal. */
+  steps?: GoalStep[]
+  /** A routine that feeds this goal; the week page shows how often it was done. */
+  routineId?: string
+  /** The week's one top priority, shown above everything else. */
+  priority?: boolean
+  createdAt: string
+  updatedAt: string
+}
 
 export interface Task {
   id: string
@@ -123,9 +211,12 @@ export interface Settings {
   id: string
   userId: string
   notif: {
-    /** Routine start reminders (Leo) or task reminders (Sonia). */
+    /** Routine start reminders (Leo) or task reminders (Soniya). */
     reminders: boolean
+    /** Deadline and overdue warnings (Soniya); the 20:00 streak-at-risk check (Leo). */
     deadlines: boolean
+    /** Soniya's 08:00 summary of the day. Missing means on. */
+    summary?: boolean
     partner: boolean
     quiet: { on: boolean; from: string; to: string }
   }
@@ -157,7 +248,7 @@ export interface AppNotification {
   createdAt: string
 }
 
-export type ActivityKind = 'routine-done' | 'streak' | 'day-planned' | 'day-done' | 'cheer' | 'nudge'
+export type ActivityKind = 'routine-done' | 'streak' | 'day-planned' | 'day-done' | 'cheer' | 'nudge' | 'week-goals'
 
 /** What the other person can see happened. Never carries item details. */
 export interface Activity {
