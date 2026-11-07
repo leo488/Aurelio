@@ -64,10 +64,10 @@ jobs:
       - name: Deploy functions
         if: steps.check.outputs.ready == 'true'
         run: |
-          supabase functions deploy auth --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
-          supabase functions deploy push-dispatch --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
-          supabase functions deploy ori --project-ref "$SUPABASE_PROJECT_REF" --use-api
-          supabase functions deploy scan --project-ref "$SUPABASE_PROJECT_REF" --use-api
+          supabase functions deploy auth --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api --yes
+          supabase functions deploy push-dispatch --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api --yes
+          supabase functions deploy ori --project-ref "$SUPABASE_PROJECT_REF" --use-api --yes
+          supabase functions deploy scan --project-ref "$SUPABASE_PROJECT_REF" --use-api --yes
       - name: Check the live backend
         if: steps.check.outputs.ready == 'true'
         run: node scripts/supabase-smoke.mjs
