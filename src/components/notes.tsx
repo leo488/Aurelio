@@ -85,34 +85,51 @@ export function checklist(body: string) {
   return items.length ? { done: items.filter((i) => /^\[(x|X)\]/.test(i)).length, total: items.length } : null
 }
 
-/** The first line that isn't a goal, for a card's one-line summary. */
-const firstLine = (body: string) => body.split('\n').map((l) => l.trim()).find((l) => l && !ITEM.test(l)) ?? ''
-
 /** What a search matches: the title, the text and the place. */
 export const matches = (n: Note, q: string) => !q || `${n.title}\n${n.body}\n${n.place ?? ''}`.toLowerCase().includes(q.toLowerCase())
 
-/** A note in the grid, like a Keep card: a strip of its photo, the title, a one-line summary. */
+/** "30 Oct", or "Today" / "Yesterday". */
+function shortStamp(iso: string) {
+  const d = new Date(iso)
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 864e5)
+  return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
+}
+
+/**
+ * A note as a Keep card: a small strip of its photo, the title, its first few lines with goals as
+ * boxes, and a chip with where and when. Long notes stop after a few lines.
+ */
 export function NoteCard({ note: n }: { note: Note }) {
-  const photos = photosOf(n)
-  const list = checklist(n.body)
-  const line = firstLine(n.body)
+  const photo = photosOf(n)[0]
+  const lines = n.body.split('\n').map((l) => l.trim()).filter(Boolean)
+  const shown = lines.slice(0, photo ? 3 : 6)
+  const more = lines.length - shown.length
   return (
     <Link to={`/notes/${n.id}`} className="card keep-card">
-      {photos.length > 0 && (
-        <div className="keep-photo">
-          <img src={photos[0]} alt="" loading="lazy" />
-          {photos.length > 1 && <span className="keep-count">+{photos.length - 1}</span>}
-        </div>
-      )}
+      {photo && <div className="keep-photo"><img src={photo} alt="" loading="lazy" /></div>}
       <div className="keep-body">
-        <div className="keep-title">{n.title || line || 'Untitled'}</div>
-        {list ? (
-          <>
-            <div className="keep-sum">{list.done === list.total ? `All ${list.total} goals done` : `${list.total} goals · ${list.done} done`}</div>
-            <div className="keep-bar" aria-hidden="true"><span style={{ width: `${(list.done / list.total) * 100}%` }} /></div>
-          </>
-        ) : (n.title && line && <div className="keep-sum">{line}</div>)}
-        <NoteMeta note={n} style={{ marginTop: 8 }} />
+        {n.title && <div className="keep-title">{n.title}</div>}
+        {shown.length > 0 && (
+          <div className="keep-lines">
+            {shown.map((l, i) => {
+              const m = l.match(ITEM)
+              const box = m?.[1].match(BOX)
+              if (!m) return <div key={i} className="keep-line">{l}</div>
+              const done = !!box && box[1] !== ' '
+              return (
+                <div key={i} className={done ? 'keep-line goal done' : 'keep-line goal'}>
+                  <span className="keep-box" aria-hidden="true">{done ? '✓' : ''}</span>
+                  <span>{box ? box[2] : m[1]}</span>
+                </div>
+              )
+            })}
+            {more > 0 && <div className="keep-more">+{more} more</div>}
+          </div>
+        )}
+        <div className="keep-chip">
+          {n.place && <><Pin /><span className="keep-chip-place">{n.place.split(',')[0]}</span><span aria-hidden="true">·</span></>}
+          <span>{shortStamp(n.createdAt)}</span>
+        </div>
       </div>
     </Link>
   )

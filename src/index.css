@@ -261,7 +261,33 @@ a:active { transform: scale(.97); }
 .photo-cell { position: relative; scroll-snap-align: start; }
 .photo-strip.many .photo-thumb { height: 240px; }
 .photo-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; font-size: 18px; line-height: 1; }
-.keep-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; margin-top: 14px; }
+.keep-grid { columns: 2; column-gap: 10px; margin-top: 10px; }
+.keep-grid.list { columns: 1; }
+.keep-grid > .keep-card { break-inside: avoid; margin-bottom: 10px; }
+.keep-section { font-size: 12px; font-weight: 800; letter-spacing: .06em; color: var(--muted-2); margin: 18px 2px 0; }
+.keep-lines { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.keep-line { font-size: 13px; line-height: 1.38; color: var(--muted-1); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.keep-line.goal { display: flex; gap: 7px; align-items: flex-start; -webkit-line-clamp: unset; }
+.keep-line.goal > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.keep-line.done > span:last-child { text-decoration: line-through; color: var(--muted-4); }
+.keep-box { flex: 0 0 auto; width: 13px; height: 13px; margin-top: 2.5px; border-radius: 3.5px; border: 1.4px solid var(--muted-3); font-size: 9px; font-weight: 900; line-height: 10px; text-align: center; color: var(--on-gold); }
+.keep-line.done .keep-box { background: var(--gold); border-color: var(--gold); }
+.keep-more { font-size: 12px; font-weight: 700; color: var(--muted-3); }
+.keep-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; margin-top: 10px; padding: 4px 9px; border-radius: 99px; background: var(--glass); border: 1px solid var(--glass-line); font-size: 11px; font-weight: 700; color: var(--muted-2); white-space: nowrap; }
+.keep-chip-place { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.recorder { display: flex; align-items: center; gap: 16px; padding: 16px; margin-top: 12px; }
+.rec-btn { width: 60px; height: 60px; flex: 0 0 auto; border-radius: 50%; background: var(--gold); color: var(--on-gold); display: flex; align-items: center; justify-content: center; box-shadow: var(--glow-ori); }
+.rec-btn.on { background: var(--clay); animation: rec-pulse 1.6s ease-in-out infinite; }
+.rec-stop { width: 20px; height: 20px; border-radius: 5px; background: #fff; }
+.rec-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--clay); margin-right: 4px; vertical-align: 1px; }
+@keyframes rec-pulse { 50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--clay) 22%, transparent); } }
+.fab-wrap { position: fixed; z-index: 60; right: max(var(--pad-x), calc((100vw - var(--app-max)) / 2 + var(--pad-x))); bottom: calc(max(16px, var(--safe-bottom)) + 82px); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.fab { width: 58px; height: 58px; border-radius: 20px; background: var(--gold); box-shadow: 0 14px 30px -10px rgba(0, 0, 0, .7); display: flex; align-items: center; justify-content: center; }
+.fab svg { transition: transform .2s; }
+.fab.on svg { transform: rotate(45deg); }
+.fab-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; animation: pop-in .18s ease; }
+.fab-item { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 18px; border-radius: 99px; background: var(--glass); border: 1px solid var(--glass-line); box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); font-size: 14.5px; font-weight: 800; color: var(--ink); cursor: pointer; }
 .keep-card { display: block; width: 100%; margin: 0; padding: 0; overflow: hidden; color: inherit; text-align: left; }
 .keep-photo { position: relative; }
 .keep-photo img { display: block; width: 100%; height: 92px; object-fit: cover; }

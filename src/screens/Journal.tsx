@@ -33,7 +33,7 @@ export function Journal() {
     <main className="screen" style={{ background: 'var(--wash-default)' }}>
       <ScreenHeader title={notes ? 'Notes' : 'Journal'} sub={notes ? `${data.notes.length} ${data.notes.length === 1 ? 'note' : 'notes'}` : date === today ? longDate(date) : <>{longDate(date)} · <button type="button" className="link-gold" onClick={() => setParams({}, { replace: true })}>Today</button></>} />
       <div className="pad" style={{ paddingTop: 14 }}>
-        <div className="seg" role="tablist">{tab('journal', 'Journal')}{tab('notes', data.notes.length ? `Notes · ${data.notes.length}` : 'Notes')}</div>
+        <div className="seg" role="tablist">{tab('journal', 'Journal')}{tab('notes', 'Notes')}</div>
       </div>
       {notes ? <NotesList /> : <>
       <Entry key={date} date={date} today={today} />

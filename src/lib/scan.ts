@@ -25,19 +25,27 @@ async function draw(file: File, max: number, quality: number) {
   return canvas.toDataURL('image/jpeg', quality)
 }
 
-/** A sharp copy for reading (base64, no prefix) and a small one to keep with the note. */
+/**
+ * A sharp copy for reading (base64, no prefix), and a tiny one (about 10 KB) kept with the note as its
+ * thumbnail. The sharp copy is never stored, so photos take almost no database space.
+ */
 export async function preparePhoto(file: File) {
-  const [full, thumb] = await Promise.all([draw(file, 1600, 0.82), draw(file, 560, 0.68)])
+  const [full, thumb] = await Promise.all([draw(file, 1600, 0.82), draw(file, 320, 0.55)])
   return { full: full.slice(full.indexOf(',') + 1), thumb }
 }
 
 /** The pages as a checklist. 'off' when no AI key is set up; null when they couldn't be read. */
-export async function readNotes(images: string[]): Promise<{ title: string; body: string } | 'off' | null> {
+export const readNotes = (images: string[]) => read({ images })
+
+/** A voice note (base64 WAV) as a checklist, the same way. */
+export const readVoice = (audio: string) => read({ audio })
+
+async function read(body: { images: string[] } | { audio: string }): Promise<{ title: string; body: string } | 'off' | null> {
   if (!useSupabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return useSupabase ? null : 'off'
   try {
     const sb = (await import('../services/supabase/supabaseBackend')).getSupabase()
     if (!sb) return null
-    const { data, error } = await sb.functions.invoke('scan', { body: { images } })
+    const { data, error } = await sb.functions.invoke('scan', { body })
     if (error) {
       const status = (error as { context?: Response }).context?.status
       return status === 503 ? 'off' : null
