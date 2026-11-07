@@ -146,3 +146,12 @@ await sql(`create extension if not exists pg_cron;
       timeout_milliseconds := 20000)
   $cmd$);`)
 console.log('  ok')
+
+// The push check runs 1,440 times a day and pg_cron logs every run, forever. Keep two days of it.
+step('Daily cleanup of the push-check log')
+await sql(`select cron.unschedule(jobid) from cron.job where jobname = 'aurelio-cron-cleanup';
+  select cron.schedule('aurelio-cron-cleanup', '17 3 * * *', $cmd$
+    delete from cron.job_run_details where end_time < now() - interval '2 days'
+  $cmd$);
+  delete from cron.job_run_details where end_time < now() - interval '2 days';`)
+console.log('  ok')
